@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         나무 링크런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.3.1
+// @version      1.3.2
 // @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
@@ -240,11 +240,11 @@
   setInterval(markLinks, 700);
 
   /* ---------- 4. 화면 구석 기록판 ---------- */
-  // 게임 페이지와 같은 글꼴(Gothic A1). 문서에 한 번 불러오면 기록판(shadow DOM) 안에서도 쓰여요.
+  // 게임 페이지와 같은 글꼴(Pretendard). 문서에 한 번 불러오면 기록판(shadow DOM) 안에서도 쓰여요.
   if (!document.getElementById('linkrun-font')) {
     const lf = document.createElement('link');
     lf.id = 'linkrun-font'; lf.rel = 'stylesheet';
-    lf.href = 'https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800;900&display=swap';
+    lf.href = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';
     document.head.appendChild(lf);
   }
   const host = document.createElement('div');
@@ -252,15 +252,15 @@
   const sh = host.attachShadow({ mode: 'open' });
   sh.innerHTML = `
 <style>
-  :host{--ink:#F1F2FA;--muted:#9097B5;--surface:#141827;--sunk:#1C2135;--edge:#3A4270;--link:#7D95FF;--visited:#B28CFF;--mark:#FFE34D;--bad:#FF6B6E;--good:#3DD39A}
+  :host{--ink:#E8F3EC;--muted:#8AA597;--surface:#101C16;--sunk:#16261E;--edge:#2E4A3C;--link:#3FD196;--visited:#5CC9C4;--mark:#C9F25A;--bad:#FF6B6B;--good:#3FD196}
   .box{width:280px;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:16px;padding:14px 16px;
-       font:500 13px/1.5 "Gothic A1","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;box-shadow:5px 5px 0 #000;-webkit-font-smoothing:antialiased}
+       font:500 13px/1.5 "Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;box-shadow:5px 5px 0 #000;-webkit-font-smoothing:antialiased}
   .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .brand{font-weight:900;letter-spacing:-.02em}
   .brand::first-letter{color:var(--link)}
   .timer{font-weight:900;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em;margin:10px 0 6px}
   .goal{color:var(--muted);font-weight:700}
-  .goal b{color:#0B0D1F;background:var(--mark);padding:0 5px;border-radius:4px;font-weight:900}
+  .goal b{color:#0B1A13;background:var(--mark);padding:0 5px;border-radius:4px;font-weight:900}
   .stat{color:var(--muted);font-size:12px;font-weight:700;margin-top:4px}
   .stat.done{color:var(--good)}
   ol{list-style:none;margin:10px 0 0;padding:8px 0 0;border-top:2px solid var(--sunk);display:flex;flex-direction:column;gap:3px;max-height:124px;overflow:auto}
@@ -270,12 +270,12 @@
   .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   button{font:inherit;font-size:12px;font-weight:800;border:2px solid var(--edge);background:var(--sunk);color:var(--ink);border-radius:8px;padding:4px 10px;cursor:pointer;box-shadow:2px 2px 0 #000}
   button:active{transform:translate(2px,2px);box-shadow:none}
-  button.primary{background:var(--link);color:#0B0D18}
+  button.primary{background:var(--link);color:#06140D}
   button.armed{background:var(--bad);color:#fff}
   #fold{box-shadow:none;border-color:transparent;background:transparent;color:var(--muted);padding:2px 6px}
   .msg{margin-top:10px;font-size:12px;color:var(--mark);font-weight:700}
-  .mini{cursor:pointer;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:999px;padding:7px 14px;font:900 14px "Gothic A1","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums;box-shadow:3px 3px 0 #000}
-  textarea{width:100%;height:56px;margin-top:8px;font:11px ui-monospace,Consolas,monospace;background:#0B0D18;color:var(--ink);border:2px solid var(--edge);border-radius:8px;resize:none}
+  .mini{cursor:pointer;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:999px;padding:7px 14px;font:900 14px "Pretendard Variable","Pretendard","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums;box-shadow:3px 3px 0 #000}
+  textarea{width:100%;height:56px;margin-top:8px;font:11px ui-monospace,Consolas,monospace;background:#08110C;color:var(--ink);border:2px solid var(--edge);border-radius:8px;resize:none}
   [hidden]{display:none!important}
 </style>
 <button class="mini" id="mini" hidden></button>

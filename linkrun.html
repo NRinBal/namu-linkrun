@@ -1,36 +1,33 @@
 <title>나무 링크런</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;700;800;900&display=swap">
 <style>
-/* ───────── 하이퍼링크 레이스: 한 글꼴(Gothic A1), 굵기만 달리 ───────── */
+/* ───────── 하이퍼링크 레이스: 한 글꼴(Pretendard), 굵기만 달리 · 초록 ───────── */
 :root{
-  --ground:#F3F4F8; --surface:#FFFFFF; --sunk:#ECEEF5; --ink:#0B0D1F; --muted:#5A5F7A; --hair:#DADDEA;
-  --edge:#0B0D1F; --shadow:#0B0D1F;
-  --link:#2346FF; --link-ink:#FFFFFF; --link-soft:#E4E9FF; --visited:#7B3FE4;
-  --mark:#FFE34D; --mark-ink:#0B0D1F; --target-ink:#0B0D1F; --target-mark:#FFE34D;
-  --good:#0E9F6E; --bad:#E5383B; --bad-soft:#FDE7E7; --gold:#D99A00;
-  --font:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  --ground:#F1F6F2; --surface:#FFFFFF; --sunk:#E6EFE9; --ink:#0B1A13; --muted:#56695F; --hair:#D2DFD7;
+  --edge:#0B1A13; --shadow:#0B1A13;
+  --link:#0A8A5B; --link-ink:#FFFFFF; --link-soft:#DAF1E5; --visited:#0E6C73;
+  --mark:#C9F25A; --mark-ink:#0B1A13; --target-ink:#0B1A13; --target-mark:#C9F25A;
+  --good:#0A8A5B; --bad:#E03E3E; --bad-soft:#FBE6E4; --gold:#D99A00;
+  --font:"Pretendard Variable","Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
   --code:ui-monospace,SFMono-Regular,Consolas,monospace;
   --r:14px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --ground:#0B0D18; --surface:#141827; --sunk:#1C2135; --ink:#F1F2FA; --muted:#9097B5; --hair:#2A3050;
-    --edge:#3A4270; --shadow:#000000;
-    --link:#7D95FF; --link-ink:#0B0D18; --link-soft:#1E2750; --visited:#B28CFF;
-    --mark:#FFE34D; --mark-ink:#0B0D1F; --target-ink:#FFE34D; --target-mark:rgba(255,227,77,.2);
-    --good:#3DD39A; --bad:#FF6B6E; --bad-soft:#3A1C24; --gold:#FFC940;
+    --ground:#08110C; --surface:#101C16; --sunk:#16261E; --ink:#E8F3EC; --muted:#8AA597; --hair:#22362C;
+    --edge:#2E4A3C; --shadow:#000000;
+    --link:#3FD196; --link-ink:#06140D; --link-soft:#133A29; --visited:#5CC9C4;
+    --mark:#C9F25A; --mark-ink:#0B1A13; --target-ink:#C9F25A; --target-mark:rgba(201,242,90,.18);
+    --good:#3FD196; --bad:#FF6B6B; --bad-soft:#3A1C1F; --gold:#FFC940;
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --ground:#0B0D18; --surface:#141827; --sunk:#1C2135; --ink:#F1F2FA; --muted:#9097B5; --hair:#2A3050;
-  --edge:#3A4270; --shadow:#000000;
-  --link:#7D95FF; --link-ink:#0B0D18; --link-soft:#1E2750; --visited:#B28CFF;
-  --mark:#FFE34D; --mark-ink:#0B0D1F; --target-ink:#FFE34D; --target-mark:rgba(255,227,77,.2);
-  --good:#3DD39A; --bad:#FF6B6E; --bad-soft:#3A1C24; --gold:#FFC940;
+  --ground:#08110C; --surface:#101C16; --sunk:#16261E; --ink:#E8F3EC; --muted:#8AA597; --hair:#22362C;
+  --edge:#2E4A3C; --shadow:#000000;
+  --link:#3FD196; --link-ink:#06140D; --link-soft:#133A29; --visited:#5CC9C4;
+  --mark:#C9F25A; --mark-ink:#0B1A13; --target-ink:#C9F25A; --target-mark:rgba(201,242,90,.18);
+  --good:#3FD196; --bad:#FF6B6B; --bad-soft:#3A1C1F; --gold:#FFC940;
 }
 *{box-sizing:border-box}
 body{background:var(--ground);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;font-weight:500;-webkit-font-smoothing:antialiased}
@@ -132,7 +129,7 @@ a#start-doc[href]:hover .v{color:var(--visited)}
 .board-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 0;border-top:2px solid var(--hair)}
 .board-row:first-child{border-top:0;padding-top:4px}
 .rank{font-weight:900;font-size:20px;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
-.rank.r1{color:#0B0D1F;background:var(--gold);border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:16px}
+.rank.r1{color:var(--mark-ink);background:var(--gold);border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:16px}
 .who{display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}
 .who .nm{font-weight:900;font-size:16px;overflow-wrap:anywhere}
 .who .you{font-size:11px;color:var(--link);font-weight:900}
@@ -319,7 +316,7 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
 // ==UserScript==
 // @name         나무 링크런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.3.1
+// @version      1.3.2
 // @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
@@ -558,11 +555,11 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
   setInterval(markLinks, 700);
 
   /* ---------- 4. 화면 구석 기록판 ---------- */
-  // 게임 페이지와 같은 글꼴(Gothic A1). 문서에 한 번 불러오면 기록판(shadow DOM) 안에서도 쓰여요.
+  // 게임 페이지와 같은 글꼴(Pretendard). 문서에 한 번 불러오면 기록판(shadow DOM) 안에서도 쓰여요.
   if (!document.getElementById('linkrun-font')) {
     const lf = document.createElement('link');
     lf.id = 'linkrun-font'; lf.rel = 'stylesheet';
-    lf.href = 'https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800;900&display=swap';
+    lf.href = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';
     document.head.appendChild(lf);
   }
   const host = document.createElement('div');
@@ -570,15 +567,15 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
   const sh = host.attachShadow({ mode: 'open' });
   sh.innerHTML = `
 <style>
-  :host{--ink:#F1F2FA;--muted:#9097B5;--surface:#141827;--sunk:#1C2135;--edge:#3A4270;--link:#7D95FF;--visited:#B28CFF;--mark:#FFE34D;--bad:#FF6B6E;--good:#3DD39A}
+  :host{--ink:#E8F3EC;--muted:#8AA597;--surface:#101C16;--sunk:#16261E;--edge:#2E4A3C;--link:#3FD196;--visited:#5CC9C4;--mark:#C9F25A;--bad:#FF6B6B;--good:#3FD196}
   .box{width:280px;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:16px;padding:14px 16px;
-       font:500 13px/1.5 "Gothic A1","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;box-shadow:5px 5px 0 #000;-webkit-font-smoothing:antialiased}
+       font:500 13px/1.5 "Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;box-shadow:5px 5px 0 #000;-webkit-font-smoothing:antialiased}
   .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .brand{font-weight:900;letter-spacing:-.02em}
   .brand::first-letter{color:var(--link)}
   .timer{font-weight:900;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em;margin:10px 0 6px}
   .goal{color:var(--muted);font-weight:700}
-  .goal b{color:#0B0D1F;background:var(--mark);padding:0 5px;border-radius:4px;font-weight:900}
+  .goal b{color:#0B1A13;background:var(--mark);padding:0 5px;border-radius:4px;font-weight:900}
   .stat{color:var(--muted);font-size:12px;font-weight:700;margin-top:4px}
   .stat.done{color:var(--good)}
   ol{list-style:none;margin:10px 0 0;padding:8px 0 0;border-top:2px solid var(--sunk);display:flex;flex-direction:column;gap:3px;max-height:124px;overflow:auto}
@@ -588,12 +585,12 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
   .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
   button{font:inherit;font-size:12px;font-weight:800;border:2px solid var(--edge);background:var(--sunk);color:var(--ink);border-radius:8px;padding:4px 10px;cursor:pointer;box-shadow:2px 2px 0 #000}
   button:active{transform:translate(2px,2px);box-shadow:none}
-  button.primary{background:var(--link);color:#0B0D18}
+  button.primary{background:var(--link);color:#06140D}
   button.armed{background:var(--bad);color:#fff}
   #fold{box-shadow:none;border-color:transparent;background:transparent;color:var(--muted);padding:2px 6px}
   .msg{margin-top:10px;font-size:12px;color:var(--mark);font-weight:700}
-  .mini{cursor:pointer;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:999px;padding:7px 14px;font:900 14px "Gothic A1","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums;box-shadow:3px 3px 0 #000}
-  textarea{width:100%;height:56px;margin-top:8px;font:11px ui-monospace,Consolas,monospace;background:#0B0D18;color:var(--ink);border:2px solid var(--edge);border-radius:8px;resize:none}
+  .mini{cursor:pointer;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:999px;padding:7px 14px;font:900 14px "Pretendard Variable","Pretendard","Malgun Gothic",system-ui,sans-serif;font-variant-numeric:tabular-nums;box-shadow:3px 3px 0 #000}
+  textarea{width:100%;height:56px;margin-top:8px;font:11px ui-monospace,Consolas,monospace;background:#08110C;color:var(--ink);border:2px solid var(--edge);border-radius:8px;resize:none}
   [hidden]{display:none!important}
 </style>
 <button class="mini" id="mini" hidden></button>

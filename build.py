@@ -11,6 +11,9 @@ import re
 from pathlib import Path
 
 FIREBASE_VERSION = "10.12.2"
+# Pretendard는 Google Fonts에 없어서 사이트에서만 jsDelivr로 불러와요.
+# (claude.ai 버전은 보안 규칙상 못 불러와서 시스템 글꼴로 보여요.)
+PRETENDARD_CSS = "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
 
 here = Path(__file__).parent
 html_path = here / "linkrun.html"
@@ -63,6 +66,8 @@ site = f"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="{PRETENDARD_CSS}">
 <style>:root{{color-scheme:light}}body{{margin:0}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
 <script src="https://www.gstatic.com/firebasejs/{FIREBASE_VERSION}/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/{FIREBASE_VERSION}/firebase-firestore-compat.js"></script>
