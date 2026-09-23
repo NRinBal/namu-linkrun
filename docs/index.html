@@ -11,7 +11,7 @@
 <script src="firebase-config.js"></script>
 </head>
 <body>
-<title>나무 링크런</title>
+<title>나무위키링크스피드런</title>
 <style>
 /* ───────── 하이퍼링크 레이스: 한 글꼴(Pretendard), 굵기만 달리 · 초록 ───────── */
 :root{
@@ -68,7 +68,7 @@ input[type="checkbox"]{width:18px;height:18px;accent-color:var(--link);margin:0}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px}
 .brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 .logo{font-size:clamp(28px,5vw,40px);font-weight:900;letter-spacing:-.04em;line-height:1}
-.logo u{color:var(--link);text-decoration-thickness:.14em;text-underline-offset:.12em}
+.logo em{color:var(--link);font-style:normal}
 .tagline{color:var(--muted);font-size:14px;font-weight:700}
 .me{display:flex;align-items:center;gap:8px}
 .me label{font-size:13px;color:var(--muted);white-space:nowrap;font-weight:700}
@@ -209,7 +209,7 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
 
 <div class="wrap">
   <header class="top">
-    <div class="brand"><span class="logo">나무 <u>링크</u>런</span><span class="tagline">문서 속 링크만 눌러서 목표 문서까지</span></div>
+    <div class="brand"><span class="logo"><em>나무</em>위키<em>링크</em>스피드런</span><span class="tagline">문서 속 링크만 눌러서 목표 문서까지</span></div>
     <form class="me" id="name-form">
       <label for="name-input">닉네임</label>
       <input id="name-input" maxlength="16" placeholder="닉네임 입력" autocomplete="off">
