@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         나무 링크런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.2.0
+// @version      1.3.0
 // @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
@@ -70,7 +70,7 @@
   const save = run => GM_setValue(RUN, run);
 
   function makeCode(run) {
-    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, path: run.path }));
+    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, x: !!run.x, path: run.path }));
     return 'LR1.' + body + '.' + fnv(body);
   }
 
@@ -81,7 +81,9 @@
       const d = JSON.parse(b64d(hm[1]));
       const cur = load();
       const same = cur && cur.r === d.r && cur.p === d.p && cur.a === d.a;
-      if (!same) save({ r: d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false });
+      // b: 금지 문서 제목들, bp: 금지 규칙 이름들(예: date), bm: 'warn'(경고만) | 'dq'(밟으면 실격)
+      if (!same) save({ r: d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false,
+        b: Array.isArray(d.b) ? d.b : [], bp: Array.isArray(d.bp) ? d.bp : [], bm: d.bm === 'dq' ? 'dq' : 'warn' });
     } catch (e) { console.warn('[링크런] 시작 정보를 읽지 못했어요', e); }
     history.replaceState(history.state, '', location.pathname + location.search);
   }
@@ -107,16 +109,36 @@
       document.body.appendChild(f);
     });
   }
+  /* ---------- 1-2. 금지 문서 ---------- */
+  // 게임 페이지(linkrun.html)의 BAN_PATTERNS와 같아야 해요.
+  const BAN_PATTERNS = {
+    date: [/^(기원전 )?\d{1,4}년$/, /^\d{1,4}년대$/, /^(기원전 )?\d{1,2}세기$/, /^\d{1,2}월 \d{1,2}일$/, /^\d{1,2}월$/]
+  };
+  let banKey = '', banSet = new Set(), banRes = [];
+  function banRules(run) {
+    const key = run ? run.r + ':' + run.a : '';
+    if (key !== banKey) {
+      banKey = key;
+      banSet = new Set(((run && run.b) || []).map(norm));
+      banRes = ((run && run.bp) || []).flatMap(k => BAN_PATTERNS[k] || []);
+    }
+    return banSet.size || banRes.length;
+  }
+  function isBanned(run, t, from) {
+    if (!run || !banRules(run) || isGoal(run, t, from) || norm(t) === norm(run.s) || (run.sr && norm(t) === norm(run.sr))) return false;
+    const hit = x => !!x && (banSet.has(norm(x)) || banRes.some(re => re.test(x.trim())));
+    return hit(t) || hit(from);
+  }
   const isGoal = (run, t, from) => norm(t) === norm(run.t) || (run.tr && norm(t) === norm(run.tr)) || (!!from && norm(from) === norm(run.t));
   function resolveTarget() {
     const run = load();
-    if (!run || run.tr !== undefined || run.f != null || run.g) return;
+    if (!run || run.tr !== undefined || run.f != null || run.g || run.x) return;
     resolveTitle(run.t).then(real => {
       const cur = load();
       if (!cur || cur.r !== run.r || cur.a !== run.a) return;
       cur.tr = real && norm(real) !== norm(cur.t) ? real : null;
       // 확인이 끝나기 전에 이미 실제 문서에 도착해 있었다면 그때 완주로 쳐요.
-      const hit = cur.f == null && !cur.g && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
+      const hit = cur.f == null && !cur.g && !cur.x && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
       if (hit) { cur.path = cur.path.slice(0, cur.path.indexOf(hit) + 1); cur.f = hit[1]; }
       save(cur); render(true);
       if (hit) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
@@ -158,7 +180,7 @@
     lastUrl = location.href;
     const isFirst = first; first = false;
     const run = load();
-    if (!run || run.f != null || run.g) { render(true); return; }
+    if (!run || run.f != null || run.g || run.x) { render(true); return; }
     const t = titleOf(location.href);
     if (!t) { render(true); return; }
     const from0 = new URL(location.href).searchParams.get('from');
@@ -183,13 +205,39 @@
     GM_setValue(PEND, null);
 
     const ms = now - run.a;
-    run.path.push([t, ms, how]);
-    if (isGoal(run, t, from)) run.f = ms;
+    const banned = isBanned(run, t, from);
+    run.path.push([t, ms, banned ? 'x' : how]);
+    if (banned && run.bm === 'dq') run.x = true;
+    else if (isGoal(run, t, from)) run.f = ms;
     save(run);
     render(true);
+    if (run.x) copyCode('금지 문서 ‘' + t + '’에 들어가서 실격이에요. 결과 코드를 복사했어요.');
+    else if (banned) flash('금지 문서 ‘' + t + '’예요! 경고가 붙어요.');
     if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
   }
   setInterval(check, 250);
+
+  /* ---------- 3-1. 금지 문서로 가는 링크에 취소선 ---------- */
+  const banStyle = document.createElement('style');
+  banStyle.textContent = 'a[data-lr-ban="1"]{text-decoration:line-through 2px #d0342c !important;color:#c0392b !important;opacity:.7}';
+  document.head.appendChild(banStyle);
+  const banCache = new Map();
+  function markLinks() {
+    const run = load();
+    const on = run && run.f == null && !run.g && !run.x && banRules(run);
+    for (const a of document.querySelectorAll('a[href^="/w/"]')) {
+      let b = false;
+      if (on) {
+        const href = a.getAttribute('href');
+        if (!banCache.has(href)) banCache.set(href, isBanned(run, titleOf(a.href) || ''));
+        b = banCache.get(href);
+      }
+      if (b && a.dataset.lrBan !== '1') { a.dataset.lrBan = '1'; a.title = '링크런 금지 문서'; }
+      else if (!b && a.dataset.lrBan === '1') { delete a.dataset.lrBan; a.removeAttribute('title'); }
+    }
+    if (!on) banCache.clear();
+  }
+  setInterval(markLinks, 700);
 
   /* ---------- 4. 화면 구석 기록판 ---------- */
   const host = document.createElement('div');
@@ -255,13 +303,13 @@
   $('mini').onclick = () => { folded = false; render(true); };
   $('copy').onclick = () => copyCode('결과 코드를 복사했어요. 링크런 페이지의 입력칸에 붙여넣으세요.');
   $('giveup').onclick = () => arm('giveup', () => {
-    const run = load(); if (!run || run.f != null) return;
+    const run = load(); if (!run || run.f != null || run.x) return;
     run.g = true; save(run); copyCode('포기했어요. 결과 코드를 복사했어요.');
   });
   window.__linkrunShow = () => { folded = false; render(true); flash('기록 중이에요. 다시 누르지 않아도 돼요.'); };
   $('clear').onclick = () => arm('clear', () => { GM_setValue(RUN, null); });
 
-  const TAG = { o: ['본문 밖', true], b: ['뒤로', false], j: ['링크 없이 이동', true] };
+  const TAG = { o: ['본문 밖', true], b: ['뒤로', false], j: ['링크 없이 이동', true], x: ['금지 문서', true] };
   function render(full) {
     const run = load();
     if (!run) { host.remove(); return; }
@@ -269,8 +317,8 @@
     $('box').hidden = folded; $('mini').hidden = !folded;
 
     const now = Date.now();
-    const state = run.f != null ? 'done' : run.g ? 'out' : 'run';
-    const timerText = state === 'done' ? fmt(run.f) : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
+    const state = run.f != null ? 'done' : run.x ? 'dq' : run.g ? 'out' : 'run';
+    const timerText = state === 'done' ? fmt(run.f) : state === 'dq' ? '실격' : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
     $('timer').textContent = timerText;
     $('mini').textContent = '링크런 ' + timerText;
     if (!full && run.path.length === lastLen && state === lastState) return;
@@ -278,8 +326,10 @@
 
     $('round').textContent = '링크런 ' + run.r + 'R';
     $('target').textContent = run.t + (run.tr ? ' (= ' + run.tr + ')' : run.tr === undefined && state === 'run' ? ' · 넘겨주기 확인 중' : '');
-    const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j').length;
-    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : '');
+    const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j' || x[2] === 'x').length;
+    const nBan = ((run.b || []).length) + ((run.bp || []).includes('date') ? ' + 연도·날짜' : '');
+    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : state === 'dq' ? ' · 실격' : '')
+      + (banRules(run) ? ' · 금지 ' + nBan + (run.bm === 'dq' ? '(밟으면 실격)' : '') : '');
     $('stat').className = state === 'done' ? 'stat done' : 'stat';
 
     const ol = $('path'); ol.replaceChildren();

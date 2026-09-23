@@ -108,6 +108,18 @@ a.doc-card .v{color:var(--link)}
 .checks{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;font-size:14px}
 .checks label{display:flex;gap:6px;align-items:center;cursor:pointer}
 .setup-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ban-setup{border:1px solid var(--line);border-radius:10px;padding:10px 14px 14px;margin:0 0 14px;min-width:0}
+.ban-setup legend{font-size:13px;font-weight:700;padding:0 6px}
+.ban-setup .checks{margin:6px 0 12px}
+.hint-inline{font-weight:400;color:var(--muted);font-size:12px}
+.ban-more{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+.ban-more label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);font-weight:500}
+.ban-more textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical;width:100%}
+.ban-more select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.rule.ban{border-color:var(--bad);color:var(--bad)}
+.ban-view summary{cursor:pointer;font-size:13px;color:var(--bad)}
+.ban-view p{margin:6px 0 0;font-size:13px;color:var(--muted);line-height:1.6}
+@media (max-width:760px){.ban-more{grid-template-columns:1fr}}
 .pool-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
 .pool-row label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);font-weight:500}
 .pool-row select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:150px}
@@ -177,6 +189,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
       <div class="route-arrow" aria-hidden="true">→→</div>
       <div id="target-doc" class="doc-card target"><span class="k">목표 문서</span><span class="v" id="target-v">?</span></div>
     </div>
+    <details id="ban-view" class="ban-view" hidden><summary id="ban-summary"></summary><p id="ban-list"></p></details>
     <div class="clock"><div id="timer" class="timer">00:00.0</div><div id="clock-sub" class="clock-sub"></div></div>
     <div id="stage-actions" class="stage-actions"></div>
   </section>
@@ -211,6 +224,16 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
       <label for="rule-back"><input type="checkbox" id="rule-back" checked> 뒤로 가기 허용</label>
       <label for="rule-foot"><input type="checkbox" id="rule-foot"> 각주 속 링크 허용</label>
     </div>
+    <fieldset class="ban-setup">
+      <legend>금지 문서 <span class="hint-inline">어디로든 이어지는 허브 문서를 막아요. 나무위키 화면에서 해당 링크에 취소선이 그어져요.</span></legend>
+      <div class="checks" id="ban-presets"></div>
+      <div class="ban-more">
+        <label for="ban-custom">직접 추가 <span class="hint-inline">쉼표나 줄바꿈으로 구분</span>
+          <textarea id="ban-custom" rows="2" placeholder="예: 서울특별시, 조선, 인공지능"></textarea></label>
+        <label for="ban-mode">금지 문서에 들어가면
+          <select id="ban-mode"><option value="warn">경고만 붙이기</option><option value="dq">바로 실격</option></select></label>
+      </div>
+    </fieldset>
     <div class="pool-row">
       <label for="pool-start">랜덤 시작 분류<select id="pool-start"></select></label>
       <label for="pool-target">랜덤 목표 분류<select id="pool-target"></select></label>
@@ -261,7 +284,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
 // ==UserScript==
 // @name         나무 링크런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.2.0
+// @version      1.3.0
 // @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
@@ -330,7 +353,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
   const save = run => GM_setValue(RUN, run);
 
   function makeCode(run) {
-    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, path: run.path }));
+    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, x: !!run.x, path: run.path }));
     return 'LR1.' + body + '.' + fnv(body);
   }
 
@@ -341,7 +364,9 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
       const d = JSON.parse(b64d(hm[1]));
       const cur = load();
       const same = cur && cur.r === d.r && cur.p === d.p && cur.a === d.a;
-      if (!same) save({ r: d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false });
+      // b: 금지 문서 제목들, bp: 금지 규칙 이름들(예: date), bm: 'warn'(경고만) | 'dq'(밟으면 실격)
+      if (!same) save({ r: d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false,
+        b: Array.isArray(d.b) ? d.b : [], bp: Array.isArray(d.bp) ? d.bp : [], bm: d.bm === 'dq' ? 'dq' : 'warn' });
     } catch (e) { console.warn('[링크런] 시작 정보를 읽지 못했어요', e); }
     history.replaceState(history.state, '', location.pathname + location.search);
   }
@@ -367,16 +392,36 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
       document.body.appendChild(f);
     });
   }
+  /* ---------- 1-2. 금지 문서 ---------- */
+  // 게임 페이지(linkrun.html)의 BAN_PATTERNS와 같아야 해요.
+  const BAN_PATTERNS = {
+    date: [/^(기원전 )?\d{1,4}년$/, /^\d{1,4}년대$/, /^(기원전 )?\d{1,2}세기$/, /^\d{1,2}월 \d{1,2}일$/, /^\d{1,2}월$/]
+  };
+  let banKey = '', banSet = new Set(), banRes = [];
+  function banRules(run) {
+    const key = run ? run.r + ':' + run.a : '';
+    if (key !== banKey) {
+      banKey = key;
+      banSet = new Set(((run && run.b) || []).map(norm));
+      banRes = ((run && run.bp) || []).flatMap(k => BAN_PATTERNS[k] || []);
+    }
+    return banSet.size || banRes.length;
+  }
+  function isBanned(run, t, from) {
+    if (!run || !banRules(run) || isGoal(run, t, from) || norm(t) === norm(run.s) || (run.sr && norm(t) === norm(run.sr))) return false;
+    const hit = x => !!x && (banSet.has(norm(x)) || banRes.some(re => re.test(x.trim())));
+    return hit(t) || hit(from);
+  }
   const isGoal = (run, t, from) => norm(t) === norm(run.t) || (run.tr && norm(t) === norm(run.tr)) || (!!from && norm(from) === norm(run.t));
   function resolveTarget() {
     const run = load();
-    if (!run || run.tr !== undefined || run.f != null || run.g) return;
+    if (!run || run.tr !== undefined || run.f != null || run.g || run.x) return;
     resolveTitle(run.t).then(real => {
       const cur = load();
       if (!cur || cur.r !== run.r || cur.a !== run.a) return;
       cur.tr = real && norm(real) !== norm(cur.t) ? real : null;
       // 확인이 끝나기 전에 이미 실제 문서에 도착해 있었다면 그때 완주로 쳐요.
-      const hit = cur.f == null && !cur.g && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
+      const hit = cur.f == null && !cur.g && !cur.x && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
       if (hit) { cur.path = cur.path.slice(0, cur.path.indexOf(hit) + 1); cur.f = hit[1]; }
       save(cur); render(true);
       if (hit) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
@@ -418,7 +463,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
     lastUrl = location.href;
     const isFirst = first; first = false;
     const run = load();
-    if (!run || run.f != null || run.g) { render(true); return; }
+    if (!run || run.f != null || run.g || run.x) { render(true); return; }
     const t = titleOf(location.href);
     if (!t) { render(true); return; }
     const from0 = new URL(location.href).searchParams.get('from');
@@ -443,13 +488,39 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
     GM_setValue(PEND, null);
 
     const ms = now - run.a;
-    run.path.push([t, ms, how]);
-    if (isGoal(run, t, from)) run.f = ms;
+    const banned = isBanned(run, t, from);
+    run.path.push([t, ms, banned ? 'x' : how]);
+    if (banned && run.bm === 'dq') run.x = true;
+    else if (isGoal(run, t, from)) run.f = ms;
     save(run);
     render(true);
+    if (run.x) copyCode('금지 문서 ‘' + t + '’에 들어가서 실격이에요. 결과 코드를 복사했어요.');
+    else if (banned) flash('금지 문서 ‘' + t + '’예요! 경고가 붙어요.');
     if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
   }
   setInterval(check, 250);
+
+  /* ---------- 3-1. 금지 문서로 가는 링크에 취소선 ---------- */
+  const banStyle = document.createElement('style');
+  banStyle.textContent = 'a[data-lr-ban="1"]{text-decoration:line-through 2px #d0342c !important;color:#c0392b !important;opacity:.7}';
+  document.head.appendChild(banStyle);
+  const banCache = new Map();
+  function markLinks() {
+    const run = load();
+    const on = run && run.f == null && !run.g && !run.x && banRules(run);
+    for (const a of document.querySelectorAll('a[href^="/w/"]')) {
+      let b = false;
+      if (on) {
+        const href = a.getAttribute('href');
+        if (!banCache.has(href)) banCache.set(href, isBanned(run, titleOf(a.href) || ''));
+        b = banCache.get(href);
+      }
+      if (b && a.dataset.lrBan !== '1') { a.dataset.lrBan = '1'; a.title = '링크런 금지 문서'; }
+      else if (!b && a.dataset.lrBan === '1') { delete a.dataset.lrBan; a.removeAttribute('title'); }
+    }
+    if (!on) banCache.clear();
+  }
+  setInterval(markLinks, 700);
 
   /* ---------- 4. 화면 구석 기록판 ---------- */
   const host = document.createElement('div');
@@ -515,13 +586,13 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
   $('mini').onclick = () => { folded = false; render(true); };
   $('copy').onclick = () => copyCode('결과 코드를 복사했어요. 링크런 페이지의 입력칸에 붙여넣으세요.');
   $('giveup').onclick = () => arm('giveup', () => {
-    const run = load(); if (!run || run.f != null) return;
+    const run = load(); if (!run || run.f != null || run.x) return;
     run.g = true; save(run); copyCode('포기했어요. 결과 코드를 복사했어요.');
   });
   window.__linkrunShow = () => { folded = false; render(true); flash('기록 중이에요. 다시 누르지 않아도 돼요.'); };
   $('clear').onclick = () => arm('clear', () => { GM_setValue(RUN, null); });
 
-  const TAG = { o: ['본문 밖', true], b: ['뒤로', false], j: ['링크 없이 이동', true] };
+  const TAG = { o: ['본문 밖', true], b: ['뒤로', false], j: ['링크 없이 이동', true], x: ['금지 문서', true] };
   function render(full) {
     const run = load();
     if (!run) { host.remove(); return; }
@@ -529,8 +600,8 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
     $('box').hidden = folded; $('mini').hidden = !folded;
 
     const now = Date.now();
-    const state = run.f != null ? 'done' : run.g ? 'out' : 'run';
-    const timerText = state === 'done' ? fmt(run.f) : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
+    const state = run.f != null ? 'done' : run.x ? 'dq' : run.g ? 'out' : 'run';
+    const timerText = state === 'done' ? fmt(run.f) : state === 'dq' ? '실격' : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
     $('timer').textContent = timerText;
     $('mini').textContent = '링크런 ' + timerText;
     if (!full && run.path.length === lastLen && state === lastState) return;
@@ -538,8 +609,10 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
 
     $('round').textContent = '링크런 ' + run.r + 'R';
     $('target').textContent = run.t + (run.tr ? ' (= ' + run.tr + ')' : run.tr === undefined && state === 'run' ? ' · 넘겨주기 확인 중' : '');
-    const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j').length;
-    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : '');
+    const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j' || x[2] === 'x').length;
+    const nBan = ((run.b || []).length) + ((run.bp || []).includes('date') ? ' + 연도·날짜' : '');
+    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : state === 'dq' ? ' · 실격' : '')
+      + (banRules(run) ? ' · 금지 ' + nBan + (run.bm === 'dq' ? '(밟으면 실격)' : '') : '');
     $('stat').className = state === 'done' ? 'stat done' : 'stat';
 
     const ol = $('path'); ol.replaceChildren();
@@ -568,6 +641,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
 </script>
 
 <script>
+const BANS = /*BANS*/{"country": {"name": "국가", "titles": ["대한민국", "한국", "미국", "일본", "중국", "북한", "영국", "프랑스", "독일", "러시아", "이탈리아", "스페인", "캐나다", "호주", "인도", "브라질", "멕시코", "튀르키예", "베트남", "태국", "대만", "몽골", "이집트", "이스라엘", "이란", "사우디아라비아", "네덜란드", "스위스", "스웨덴", "폴란드", "우크라이나", "그리스", "아르헨티나", "인도네시아", "필리핀", "싱가포르", "소련", "오스트리아", "포르투갈", "벨기에", "노르웨이"]}, "date": {"name": "연도·날짜", "titles": [], "patterns": ["date"], "note": "2024년, 1990년대, 19세기, 3월 1일, 3월 같은 문서 전부"}, "lang": {"name": "언어", "titles": ["영어", "한국어", "일본어", "중국어", "라틴어", "프랑스어", "독일어", "스페인어", "러시아어", "한자", "아랍어", "그리스어"]}, "city": {"name": "주요 도시", "titles": ["서울특별시", "부산광역시", "인천광역시", "대구광역시", "도쿄도", "오사카시", "뉴욕시", "로스앤젤레스", "워싱턴 D.C.", "파리(프랑스)", "런던", "베를린", "로마", "모스크바", "베이징시", "베이징", "상하이시", "상하이", "홍콩"]}, "hub": {"name": "대형 허브", "titles": ["지구", "사람", "인류", "세계", "아시아", "동아시아", "유럽", "아메리카", "아프리카", "유엔", "국제 연합", "인터넷", "나무위키", "위키백과", "영어 위키백과", "유튜브", "구글", "기독교", "불교", "이슬람"]}}/*BANS*/; // bans.json에서 build.py가 채워요
 const POOL = /*POOL*/{"음식": ["김치", "떡볶이", "라면", "삼겹살", "비빔밥", "치킨", "커피", "초콜릿", "소주", "수박", "바나나", "우유", "피자", "햄버거", "짜장면", "짬뽕", "불고기", "냉면", "김밥", "떡", "막걸리", "맥주", "포도주", "아이스크림", "케이크", "마카롱", "초밥", "라멘", "쌀", "두부", "된장", "고추장", "마라탕", "탕후루", "콜라", "배추", "사과", "감자", "고구마", "딸기"], "동물": ["고양이", "개", "펭귄", "상어", "고래", "개미", "꿀벌", "호랑이", "사자", "판다", "코끼리", "기린", "캥거루", "코알라", "문어", "오징어", "해파리", "거북", "뱀", "악어", "독수리", "비둘기", "까마귀", "앵무새", "햄스터", "토끼", "너구리", "늑대", "여우", "곰", "모기", "바퀴벌레", "나비", "공룡", "티라노사우루스", "돌고래", "닭", "소", "돼지", "말(동물)"], "과학·기술": ["블랙홀", "태양", "달", "화성", "은하수", "원자", "DNA", "전기", "인공지능", "인터넷", "컴퓨터", "스마트폰", "비트코인", "상대성 이론", "양자역학", "진화생물학", "빅뱅 우주론", "지구", "목성", "토성", "명왕성", "수소", "산소", "물", "빛", "중력", "반도체", "로봇", "로켓", "인공위성", "백신", "항생제", "원자력 발전소", "피타고라스 정리", "원주율", "백악기-고진기 대멸종", "화산", "지진", "태풍", "무지개"], "인물": ["세종(조선)", "이순신", "나폴레옹 1세", "알베르트 아인슈타인", "아이작 뉴턴", "레오나르도 다빈치", "루트비히 판 베토벤", "볼프강 아마데우스 모차르트", "윌리엄 셰익스피어", "찰스 다윈", "마리 퀴리", "스티브 잡스", "일론 머스크", "빌 게이츠", "에이브러햄 링컨", "칭기즈 칸", "알렉산드로스 3세", "율리우스 카이사르", "클레오파트라 7세", "공자", "석가모니", "예수", "소크라테스", "광개토대왕", "장영실", "유관순", "안중근", "김구", "신사임당", "정약용", "빈센트 반 고흐", "파블로 피카소", "월트 디즈니", "마이클 잭슨", "아돌프 히틀러", "갈릴레오 갈릴레이", "토머스 에디슨", "니콜라 테슬라", "헬렌 켈러", "모한다스 카람찬드 간디"], "장소": ["에펠탑", "만리장성", "독도", "제주도", "서울특별시", "부산광역시", "일본", "브라질", "이집트", "남극", "에베레스트", "아마존강", "미국", "중국", "러시아", "프랑스", "영국", "독일", "이탈리아", "호주", "캐나다", "인도", "뉴욕시", "파리(프랑스)", "도쿄도", "런던", "사하라 사막", "태평양", "한라산", "경복궁", "남산서울타워", "기자의 대피라미드", "콜로세움", "자유의 여신상", "타지마할", "롯데월드타워", "에버랜드", "한강", "울릉군", "우주"], "역사": ["로마 제국", "조선", "고구려", "백제", "신라", "고려", "제2차 세계 대전", "제1차 세계 대전", "프랑스 혁명", "산업 혁명", "임진왜란", "6.25 전쟁", "3.1 운동", "르네상스", "냉전", "대항해시대", "몽골 제국", "오스만 제국", "시황제", "삼국지", "훈민정음", "팔만대장경", "거북선", "동로마 제국", "십자군 전쟁", "아폴로 11호", "RMS 타이타닉", "베를린 장벽", "고조선", "발해", "대한제국", "8.15 광복", "석굴암", "첨성대", "직지심체요절", "만주", "실크로드", "피라미드", "페스트", "공룡시대"], "게임·애니·영화": ["피카츄", "포켓몬스터", "슈퍼 마리오 시리즈", "마인크래프트", "리그 오브 레전드", "테트리스", "스타크래프트", "오버워치", "PUBG: BATTLEGROUNDS", "메이플스토리", "Roblox", "젤다의 전설", "짱구는 못말려", "도라에몽", "원피스(만화)", "나루토", "드래곤볼", "귀멸의 칼날", "진격의 거인", "명탐정 코난", "뽀롱뽀롱 뽀로로", "아기공룡 둘리", "네모바지 스폰지밥", "심슨 가족", "미키 마우스", "겨울왕국", "토이 스토리", "해리 포터 시리즈", "반지의 제왕", "스타워즈", "마블 시네마틱 유니버스", "아이언맨", "스파이더맨", "배트맨", "오징어 게임", "기생충(영화)", "어벤져스: 엔드게임", "타이타닉(영화)", "쿠키런", "크레이지레이싱 카트라이더"], "스포츠": ["축구", "야구", "농구", "배구", "테니스", "골프", "탁구", "배드민턴", "태권도", "씨름", "올림픽", "FIFA 월드컵", "손흥민", "박지성", "김연아", "류현진", "리오넬 메시", "크리스티아누 호날두", "마이클 조던", "이상혁", "마라톤", "수영", "스키", "체스", "바둑", "e스포츠", "프리미어 리그", "KBO 리그", "오타니 쇼헤이", "우사인 볼트", "양궁", "펜싱", "유도", "권투", "레슬링", "피겨 스케이팅", "컬링", "당구", "볼링", "스노보드"], "문화·생활": ["한글", "아이유", "방탄소년단", "BLACKPINK", "NewJeans", "싸이", "강남스타일", "스타벅스", "해바라기", "피아노", "기타", "바이올린", "성탄절", "설날", "추석", "할로윈", "유튜브", "넷플릭스", "카카오톡", "네이버", "구글", "Apple", "삼성전자", "나무위키", "위키백과", "무한도전", "런닝맨", "모나리자", "레고", "3×3×3 큐브", "지하철", "비행기", "자동차", "자전거", "우산", "안경", "연필", "책", "태극기", "애국가"]}/*POOL*/; // pool.json에서 build.py가 채워요
 const COUNTDOWN_MS = 5000;
 
@@ -631,9 +705,30 @@ function fmt(ms){
   const m = Math.floor(ms/60000), s = Math.floor(ms/1000)%60, d = Math.floor(ms/100)%10;
   return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+"."+d;
 }
-const startLink = g => namuUrl(g.start) + "#linkrun=" + b64e(JSON.stringify({ r: g.round, s: g.start, t: g.target, a: g.startAt, p: me.id }));
-const HOW = { b: "뒤로", o: "본문 밖", j: "링크 없이 이동" };
-const isWarn = (how, rules) => how === "o" || how === "j" || (how === "b" && !(rules && rules.back));
+const banOf = g => (g && g.rules && g.rules.ban) || null;
+const startLink = g => {
+  const ban = banOf(g) || {};
+  return namuUrl(g.start) + "#linkrun=" + b64e(JSON.stringify({ r: g.round, s: g.start, t: g.target, a: g.startAt, p: me.id,
+    b: ban.titles || [], bp: ban.patterns || [], bm: ban.mode === "dq" ? "dq" : "warn" }));
+};
+const HOW = { b: "뒤로", o: "본문 밖", j: "링크 없이 이동", x: "금지 문서" };
+const isWarn = (how, rules) => how === "o" || how === "j" || how === "x" || (how === "b" && !(rules && rules.back));
+
+/* 금지 문서: 자동 기록 스크립트(linkrun.user.js)의 BAN_PATTERNS와 같아야 해요. */
+const BAN_PATTERNS = {
+  date: [/^(기원전 )?\d{1,4}년$/, /^\d{1,4}년대$/, /^(기원전 )?\d{1,2}세기$/, /^\d{1,2}월 \d{1,2}일$/, /^\d{1,2}월$/]
+};
+const banCache = new WeakMap();
+function bannedTitle(t, rules){
+  const ban = rules && rules.ban;
+  if (!ban || !t) return false;
+  let c = banCache.get(ban);
+  if (!c) { c = { set: new Set((ban.titles || []).map(norm)), skip: new Set((ban.skip || []).map(norm)), res: (ban.patterns || []).flatMap(k => BAN_PATTERNS[k] || []) }; banCache.set(ban, c); }
+  if (c.skip.has(norm(t))) return false;
+  return c.set.has(norm(t)) || c.res.some(re => re.test(t.trim()));
+}
+const entryWarn = (o, rules) => isWarn(o.how, rules) || bannedTitle(o.t, rules);
+const isDq = (p, rules) => !!(rules && rules.ban && rules.ban.mode === "dq") && (p.path || []).some(x => x.how === "x" || bannedTitle(x.t, rules));
 const ALL = "전체";
 const poolOf = cat => cat && POOL[cat] ? POOL[cat] : Object.values(POOL).flat();
 function pick2(){
@@ -711,12 +806,13 @@ function applyCode(code){
   if (d.p !== me.id) { toast("다른 사람(또는 다른 브라우저)에서 시작한 코드예요. 이 화면에서 참가 버튼으로 연 기록만 올릴 수 있어요."); return; }
   const p = mine();
   if (p && (p.finishedMs != null || p.gaveUp)) { toast("이미 이번 라운드 기록이 확정됐어요."); return; }
-  const path = (d.path || []).slice(0, 500).map(x => ({ t: String(x[0]).slice(0, 200), ms: Number(x[1]) || 0, how: ["l","o","b","j"].includes(x[2]) ? x[2] : "j" }));
+  const path = (d.path || []).slice(0, 500).map(x => ({ t: String(x[0]).slice(0, 200), ms: Number(x[1]) || 0, how: ["l","o","b","j","x"].includes(x[2]) ? x[2] : "j" }));
   const last = path[path.length - 1];
   const finishedMs = last && norm(last.t) === norm(g.target) ? last.ms : (d.f != null ? Number(d.f) : null);
   const body = { name: me.name, round: g.round, path, finishedMs, gaveUp: !!d.g && finishedMs == null, auto: true, joinedAt: p ? p.joinedAt : now() };
   queue(() => myRef().set(body));
-  const warn = path.filter(x => isWarn(x.how, g.rules)).length;
+  const warn = path.filter(x => entryWarn(x, g.rules)).length;
+  if (isDq(body, g.rules)) { toast("실격 기록을 올렸어요. 금지 문서에 들어갔어요."); return; }
   toast(finishedMs != null ? "완주 기록을 올렸어요. " + fmt(finishedMs) + " · " + path.length + "클릭" + (warn ? " · 경고 " + warn : "") : body.gaveUp ? "포기 기록을 올렸어요." : "지금까지의 경로를 올렸어요.");
 }
 function logDoc(raw){
@@ -724,16 +820,18 @@ function logDoc(raw){
   if (/^\s*LR1\./.test(raw)) return applyCode(raw);
   const p = mine(); const g = G();
   if (!p && isLive()) { toast("먼저 ‘참가하고 시작 문서 열기’를 눌러 참가해 주세요."); return; }
-  if (!p || p.finishedMs != null || p.gaveUp || !isLive()) return;
+  if (!p || p.finishedMs != null || p.gaveUp || isDq(p, g.rules) || !isLive()) return;
   const t = parseTitle(raw);
   if (!t) return;
   const last = p.path.length ? p.path[p.path.length-1].t : g.start;
   if (norm(t) === norm(last)) { toast("방금 기록한 문서와 같아요."); return; }
   const ms = now() - g.startAt;
-  const path = [...p.path, { t, ms, how: "m" }];
   const done = norm(t) === norm(g.target);
+  const banned = !done && bannedTitle(t, g.rules);
+  const path = [...p.path, { t, ms, how: banned ? "x" : "m" }];
   queue(() => myRef().update({ path, finishedMs: done ? ms : null }));
   if (done) toast("완주! " + fmt(ms) + " · " + path.length + "클릭");
+  else if (banned) toast(banOf(g).mode === "dq" ? "‘" + t + "’는 금지 문서예요. 실격이에요." : "‘" + t + "’는 금지 문서예요. 경고가 붙어요.");
 }
 function undo(){
   const p = mine();
@@ -752,10 +850,12 @@ function startRound(start, target, blind){
   start = parseTitle(start); target = parseTitle(target);
   if (!start || !target) { toast("시작 문서와 목표 문서를 모두 입력해 주세요."); return; }
   if (norm(start) === norm(target)) { toast("시작과 목표가 같은 문서예요."); return; }
+  const rules = { back: $("#rule-back").checked, foot: $("#rule-foot").checked };
+  const ban = readBanSetup(start, target);
+  if (ban) rules.ban = ban;
   const next = {
     round: (G().round || 0) + 1, status: "running", start, target, blind: !!blind,
-    startAt: now() + COUNTDOWN_MS, host: me.name,
-    rules: { back: $("#rule-back").checked, foot: $("#rule-foot").checked }
+    startAt: now() + COUNTDOWN_MS, host: me.name, rules
   };
   queue(() => db.doc("game/state").set(next));
   $("#setup-start").value = ""; $("#setup-target").value = "";
@@ -765,7 +865,7 @@ function endRound(){
   armedEnd = false;
   const g = G();
   const results = sortBoard(roundPlayers()).map(p => ({
-    name: p.name, finishedMs: p.finishedMs, gaveUp: !!p.gaveUp, clicks: p.path.length, auto: !!p.auto,
+    name: p.name, finishedMs: p.finishedMs, gaveUp: !!p.gaveUp, dq: isDq(p, g.rules), clicks: p.path.length, auto: !!p.auto,
     warns: warnCount(p.path, g.rules), path: p.path.map(x => ({ t: x.t, how: x.how || "m" }))
   }));
   queue(async () => {
@@ -783,13 +883,14 @@ function saveName(){
 }
 
 /* ---------- render ---------- */
-function statusOf(p){
+function statusOf(p, rules = G().rules){
+  if (isDq(p, rules)) return { cls: "out", label: "실격" };
   if (p.finishedMs != null) return { cls: "done", label: "완주" };
   if (p.gaveUp) return { cls: "out", label: "포기" };
   return { cls: "run", label: "달리는 중" };
 }
-function sortBoard(list){
-  const score = p => p.finishedMs != null ? 0 : p.gaveUp ? 2 : 1;
+function sortBoard(list, rules = G().rules){
+  const score = p => isDq(p, rules) ? 3 : p.finishedMs != null ? 0 : p.gaveUp ? 2 : 1;
   return [...list].sort((a,b) => score(a)-score(b)
     || (score(a) === 0 ? (a.finishedMs - b.finishedMs) || (a.path.length - b.path.length) : 0)
     || (score(a) === 1 ? b.path.length - a.path.length : 0)
@@ -801,15 +902,23 @@ function pathList(titles, opts){
   if (start) items.push(h("li", { class: "first" }, h("a", { href: namuUrl(start), target: "_blank", rel: "noopener" }, start)));
   titles.forEach((x, i) => {
     const o = typeof x === "string" ? { t: x } : Array.isArray(x) ? { t: x[0], how: x[1] } : x;
-    const warn = isWarn(o.how, rules);
+    const banned = o.how === "x" || (i !== goalIdx && bannedTitle(o.t, rules));
+    const warn = banned || isWarn(o.how, rules);
+    const label = banned ? HOW.x : HOW[o.how];
     items.push(h("li", { class: [i === goalIdx ? "goal" : "", warn ? "warn" : ""].join(" ").trim() || null },
       h("a", { href: namuUrl(o.t), target: "_blank", rel: "noopener" }, o.t),
-      HOW[o.how] ? h("span", { class: "tag" + (warn ? " bad" : "") }, HOW[o.how]) : null,
+      label ? h("span", { class: "tag" + (warn ? " bad" : "") }, label) : null,
       withMs && o.ms != null ? h("span", { class: "ms" }, fmt(o.ms)) : null));
   });
   return items;
 }
-const warnCount = (path, rules) => (path || []).filter(x => isWarn(Array.isArray(x) ? x[1] : x.how, rules)).length;
+const warnCount = (path, rules) => (path || []).filter(x => entryWarn(Array.isArray(x) ? { t: x[0], how: x[1] } : x, rules)).length;
+function banLabel(ban){
+  if (!ban) return "";
+  const names = (ban.keys || []).map(k => (BANS[k] && BANS[k].name) || k);
+  if ((ban.custom || []).length) names.push("직접 " + ban.custom.length + "개");
+  return names.join(" · ");
+}
 
 function renderStage(){
   const g = G(), p = mine();
@@ -823,7 +932,16 @@ function renderStage(){
     meta.append(h("span", { class: "rule" }, "검색·주소창 금지"));
     meta.append(h("span", { class: "rule" }, g.rules && g.rules.back ? "뒤로 가기 허용" : "뒤로 가기 금지"));
     meta.append(h("span", { class: "rule" }, g.rules && g.rules.foot ? "각주 링크 허용" : "각주 링크 금지"));
+    const ban = banOf(g);
+    if (ban) meta.append(h("span", { class: "rule ban", title: (ban.titles || []).join(", ") + ((ban.patterns || []).includes("date") ? ", 연도·날짜 문서" : "") },
+      "금지: " + banLabel(ban) + (ban.mode === "dq" ? " (밟으면 실격)" : " (경고)")));
     if (g.host) meta.append(h("span", { class: "rule" }, "출제 " + g.host));
+  }
+  const bv = $("#ban-view"), ban = started && reveal ? banOf(g) : null;
+  bv.hidden = !ban;
+  if (ban) {
+    $("#ban-list").textContent = [...(ban.titles || []), ...((ban.patterns || []).includes("date") ? ["모든 연도·세기·날짜 문서"] : [])].join(", ");
+    $("#ban-summary").textContent = "금지 문서 " + (ban.titles || []).length + "개" + ((ban.patterns || []).includes("date") ? " + 연도·날짜" : "") + " 보기";
   }
 
   const sa = $("#start-doc");
@@ -838,8 +956,9 @@ function renderStage(){
     if (counting) acts.append(h("button", { class: "primary", disabled: true }, "참가하고 시작 문서 열기 ↗"));
     else if (!p) acts.append(h("a", { class: "primary", href: startLink(g), target: "_blank", rel: "noopener", onclick: e => { if (!me.name) { e.preventDefault(); needName(); return; } join(); } }, "참가하고 시작 문서 열기 ↗"));
     else {
-      acts.append(h("span", { class: "note" }, p.finishedMs != null ? "완주했어요. 다른 사람을 기다리는 중" : p.gaveUp ? "다음 라운드에서 만나요" : "나무위키 탭에서 링크만 눌러 이동하세요. 끝나면 결과 코드를 붙여넣어요."));
-      if (p.finishedMs == null && !p.gaveUp) acts.append(h("a", { href: startLink(g), target: "_blank", rel: "noopener", class: "note" }, "시작 문서 다시 열기 ↗"));
+      const dq = isDq(p, g.rules);
+      acts.append(h("span", { class: "note" }, dq ? "금지 문서에 들어가서 실격이에요. 다음 라운드에서 만나요" : p.finishedMs != null ? "완주했어요. 다른 사람을 기다리는 중" : p.gaveUp ? "다음 라운드에서 만나요" : "나무위키 탭에서 링크만 눌러 이동하세요. 끝나면 결과 코드를 붙여넣어요."));
+      if (p.finishedMs == null && !p.gaveUp && !dq) acts.append(h("a", { href: startLink(g), target: "_blank", rel: "noopener", class: "note" }, "시작 문서 다시 열기 ↗"));
     }
     acts.append(h("span", { class: "spacer" }));
     acts.append(h("button", { class: "danger" + (armedEnd ? " armed" : ""), onclick: endRound }, armedEnd ? "한 번 더 누르면 종료" : "라운드 끝내기"));
@@ -856,6 +975,7 @@ function renderClock(){
   timer.classList.toggle("counting", counting);
   if (counting) { timer.textContent = String(Math.ceil((g.startAt - now())/1000)); sub.textContent = "초 뒤 시작 문서가 공개돼요"; }
   else if (!started) { timer.textContent = fmt(0); sub.textContent = "아래에서 문서를 정하고 라운드를 시작하세요"; }
+  else if (p && isDq(p, g.rules)) { timer.textContent = "실격"; sub.textContent = "금지 문서에 들어갔어요 · " + p.path.length + "클릭"; }
   else if (p && p.finishedMs != null) { timer.textContent = fmt(p.finishedMs); sub.textContent = "완주 · " + p.path.length + "클릭"; }
   else if (live) { timer.textContent = fmt(now() - g.startAt); sub.textContent = p ? (p.gaveUp ? "포기했어요" : p.path.length + "클릭째") : "라운드 경과 시간"; }
   else { timer.textContent = fmt((g.endedAt || now()) - g.startAt); sub.textContent = "라운드 종료"; }
@@ -863,8 +983,9 @@ function renderClock(){
 
 function renderRun(){
   const p = mine(), g = G();
-  const canLog = !!p && isLive() && p.finishedMs == null && !p.gaveUp;
-  const canInput = isLive() && !(p && (p.finishedMs != null || p.gaveUp));
+  const out = !!p && (p.finishedMs != null || p.gaveUp || isDq(p, g.rules));
+  const canLog = !!p && isLive() && !out;
+  const canInput = isLive() && !out;
   $("#doc-input").disabled = !canInput; $("#log-btn").disabled = !canInput;
   $("#undo-btn").disabled = !canLog || !p.path.length;
   const gu = $("#giveup-btn"); gu.disabled = !canLog;
@@ -913,10 +1034,10 @@ function renderHistory(){
   const box = $("#history"); box.replaceChildren();
   if (!history.length) { box.append(h("p", { class: "empty" }, "아직 끝난 라운드가 없어요.")); return; }
   for (const r of history) {
-    const win = (r.results || []).find(x => x.finishedMs != null);
+    const win = (r.results || []).find(x => x.finishedMs != null && !x.dq);
     const table = h("table", {}, h("tbody", {}, (r.results || []).map((x, i) => h("tr", {},
       h("td", {}, x.name || "이름 없음"),
-      h("td", { class: "num" }, x.finishedMs != null ? fmt(x.finishedMs) : x.gaveUp ? "포기" : "미완주"),
+      h("td", { class: "num" }, x.dq ? "실격" : x.finishedMs != null ? fmt(x.finishedMs) : x.gaveUp ? "포기" : "미완주"),
       h("td", { class: "num" }, x.clicks + "클릭" + (x.warns ? " · 경고 " + x.warns : "")),
       h("td", {}, h("ol", { class: "path" }, pathList(x.path || [], { start: r.start, goalIdx: x.finishedMs != null ? (x.path||[]).length-1 : -1, rules: r.rules })))))));
     box.append(h("details", { class: "hist" },
@@ -977,6 +1098,41 @@ $("#copy-script").addEventListener("click", () => {
   }, "스크립트를 복사했어요. Tampermonkey 새 스크립트에 붙여넣으세요.");
 });
 $("#giveup-btn").addEventListener("click", giveUp);
+/* 금지 문서 설정 (출제하는 사람 브라우저에 기억) */
+for (const [key, b] of Object.entries(BANS)) {
+  const id = "ban-" + key;
+  const n = b.patterns ? (b.note || "") : b.titles.length + "개";
+  $("#ban-presets").append(h("label", { for: id, title: b.note || b.titles.join(", ") },
+    h("input", { type: "checkbox", id, "data-ban": key }), " " + b.name + " ", h("span", { class: "hint-inline" }, n)));
+}
+try {
+  const saved = JSON.parse(lsGet("linkrun.ban") || "null");
+  if (saved) {
+    for (const k of saved.keys || []) { const el = $("#ban-" + k); if (el) el.checked = true; }
+    $("#ban-custom").value = saved.custom || "";
+    $("#ban-mode").value = saved.mode === "dq" ? "dq" : "warn";
+  }
+} catch {}
+const saveBanSetup = () => lsSet("linkrun.ban", JSON.stringify({
+  keys: [...document.querySelectorAll("#ban-presets input:checked")].map(i => i.dataset.ban),
+  custom: $("#ban-custom").value, mode: $("#ban-mode").value }));
+$("#ban-presets").addEventListener("change", saveBanSetup);
+$("#ban-custom").addEventListener("input", saveBanSetup);
+$("#ban-mode").addEventListener("change", saveBanSetup);
+function readBanSetup(start, target){
+  const keys = [...document.querySelectorAll("#ban-presets input:checked")].map(i => i.dataset.ban).filter(k => BANS[k]);
+  const custom = $("#ban-custom").value.split(/[,\n]/).map(parseTitle).filter(Boolean).slice(0, 100);
+  if (!keys.length && !custom.length) return null;
+  const skip = new Set([norm(start), norm(target)]);
+  const seen = new Set(), titles = [];
+  for (const t of [...keys.flatMap(k => BANS[k].titles || []), ...custom]) {
+    const k = norm(t);
+    if (!skip.has(k) && !seen.has(k)) { seen.add(k); titles.push(t); }
+  }
+  const patterns = [...new Set(keys.flatMap(k => BANS[k].patterns || []))];
+  return { keys, custom, titles, patterns, skip: [start, target], mode: $("#ban-mode").value === "dq" ? "dq" : "warn" };
+}
+
 for (const id of ["#pool-start", "#pool-target"]) {
   const sel = $(id);
   sel.append(h("option", { value: "" }, ALL + " (" + poolOf("").length + ")"));

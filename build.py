@@ -37,6 +37,18 @@ for cat, titles in pool.items():
         if key in seen:
             raise SystemExit(f"pool.json: '{t}'가 '{seen[key]}'와 '{cat}'에 두 번 들어 있어요.")
         seen[key] = cat
+# 금지 문서 묶음: bans.json → const BANS = /*BANS*/{...}/*BANS*/;
+bans = json.loads((here / "bans.json").read_text(encoding="utf-8"))
+for key, b in bans.items():
+    if not re.fullmatch(r"[a-z]+", key) or "name" not in b or not isinstance(b.get("titles"), list):
+        raise SystemExit(f"bans.json: '{key}' 형식이 이상해요. (영문 소문자 키, name, titles 필요)")
+    if not b["titles"] and not b.get("patterns"):
+        raise SystemExit(f"bans.json: '{key}'에 titles도 patterns도 없어요.")
+if "/*BANS*/" not in html:
+    raise SystemExit("linkrun.html에서 /*BANS*/ 자리를 찾지 못했어요.")
+bans_js = json.dumps(bans, ensure_ascii=False).replace("</", "<\\/")
+html = re.sub(r"/\*BANS\*/[\s\S]*?/\*BANS\*/", lambda m: "/*BANS*/" + bans_js + "/*BANS*/", html, count=1)
+
 if "/*POOL*/" not in html:
     raise SystemExit("linkrun.html에서 /*POOL*/ 자리를 찾지 못했어요.")
 pool_js = json.dumps(pool, ensure_ascii=False).replace("</", "<\\/")
