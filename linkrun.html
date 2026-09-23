@@ -1,0 +1,986 @@
+<title>나무 링크런</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --ground:#EEF3F0; --surface:#FFFFFF; --sunk:#E3EBE7; --ink:#14231D; --muted:#5B6E66; --line:#D3DED8;
+  --accent:#0E7C5E; --accent-ink:#FFFFFF; --accent-soft:#D7EDE4; --link:#2A55C9; --gold:#A87A10; --bad:#B93B31;
+  --display:"Black Han Sans","IBM Plex Sans KR","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F1714; --surface:#16211C; --sunk:#1C2A24; --ink:#E4EEE9; --muted:#8FA59B; --line:#273A32;
+    --accent:#3FC195; --accent-ink:#06140F; --accent-soft:#173A2E; --link:#8AA9FF; --gold:#E0B64A; --bad:#EE7A70;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F1714; --surface:#16211C; --sunk:#1C2A24; --ink:#E4EEE9; --muted:#8FA59B; --line:#273A32;
+  --accent:#3FC195; --accent-ink:#06140F; --accent-soft:#173A2E; --link:#8AA9FF; --gold:#E0B64A; --bad:#EE7A70;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+h2{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--muted);margin:0 0 12px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:500}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary,a.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+button.danger{color:var(--bad)}
+button.danger.armed{background:var(--bad);color:#fff;border-color:var(--bad)}
+input[type="text"],input:not([type]){background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 12px;min-width:0;width:100%}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.logo{font-family:var(--display);font-size:30px;letter-spacing:.01em;color:var(--accent)}
+.tag{color:var(--muted);font-size:13px}
+.me{display:flex;align-items:center;gap:8px}
+.me label{font-size:13px;color:var(--muted);white-space:nowrap}
+.me input{width:150px}
+
+.room-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:14px}
+.room-bar b{font-family:var(--mono)}
+.room-bar input{width:160px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.banner{background:var(--sunk);border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:13.5px;color:var(--muted)}
+
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:18px}
+.stage-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.round{font-family:var(--mono);font-weight:700;font-size:13px}
+.pill{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.pill.run{background:var(--accent-soft);color:var(--accent)}
+.pill.done{background:var(--accent);color:var(--accent-ink)}
+.pill.out{color:var(--bad)}
+.rule{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+.route{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch}
+.doc-card{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:10px;background:var(--sunk);text-decoration:none;color:inherit;min-width:0}
+.doc-card .k{font-size:12px;color:var(--muted);font-weight:500}
+.doc-card .v{font-family:var(--display);font-size:clamp(22px,4vw,32px);line-height:1.2;overflow-wrap:anywhere;text-wrap:balance}
+a.doc-card .v{color:var(--link)}
+.doc-card.target{background:var(--accent-soft)}
+.doc-card.target .v{color:var(--accent)}
+.route-arrow{align-self:center;font-family:var(--mono);color:var(--muted);font-size:22px}
+.clock{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.timer{font-family:var(--mono);font-weight:700;font-size:clamp(40px,8vw,64px);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.timer.counting{color:var(--accent)}
+.clock-sub{color:var(--muted);font-size:14px}
+.stage-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.stage-actions a.primary{display:inline-block;text-decoration:none;border-radius:8px;padding:10px 18px}
+.stage-actions .note{color:var(--muted);font-size:14px}
+.spacer{flex:1}
+
+.grid{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0}
+#log-form{display:flex;gap:8px}
+#log-form button{white-space:nowrap}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 14px}
+.path{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center}
+.path li{display:flex;align-items:center;gap:4px}
+.path li+li::before{content:"→";color:var(--muted);font-family:var(--mono);margin-right:4px}
+.path a{color:var(--link);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.path .ms{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.path .goal a{color:var(--accent);font-weight:700}
+.path .first a{font-weight:700}
+.run-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.empty{color:var(--muted);font-size:14px}
+
+.board-row{display:grid;grid-template-columns:28px 1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.board-row:first-child{border-top:0}
+.rank{font-family:var(--mono);font-weight:700;color:var(--muted);text-align:center}
+.rank.r1{color:var(--gold)}
+.who{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.who .nm{font-weight:700;overflow-wrap:anywhere}
+.who .you{font-size:11px;color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:14px;text-align:right;white-space:nowrap}
+.num small{color:var(--muted);font-size:11px}
+.row-path{grid-column:2 / -1;font-size:13px}
+.row-path .path{gap:2px 2px}
+.row-path .hidden{color:var(--muted);font-size:12px}
+
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.setup-grid label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);font-weight:500}
+.checks{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;font-size:14px}
+.checks label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.setup-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+details.hist{border-top:1px solid var(--line);padding:10px 0}
+details.hist:first-child{border-top:0}
+details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+.hist .rn{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--muted)}
+.hist .pair{font-weight:700}
+.hist .win{color:var(--muted);font-size:13px}
+.hist table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.hist td{padding:6px 8px 6px 0;border-top:1px solid var(--line);vertical-align:top}
+.hist td.num{text-align:right}
+.hist-scroll{overflow-x:auto}
+
+.tag{display:inline-block;font-size:11px;line-height:1.5;border-radius:4px;padding:0 5px;background:var(--sunk);color:var(--muted);font-weight:500;white-space:nowrap}
+.tag.bad{background:var(--bad);color:#fff}
+.path .warn a{color:var(--bad)}
+.pill.warn{background:var(--bad);color:#fff}
+.pill.auto{background:var(--sunk);color:var(--link)}
+.steps{margin:0 0 14px;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:70ch}
+.steps a{color:var(--link)}
+.install-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.install-actions .note{color:var(--muted);font-size:13px}
+.opt{font-size:15px;margin:0 0 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bm-src{width:100%;height:72px;margin-top:10px;font:11px/1.4 var(--mono);background:var(--sunk);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;resize:vertical}
+.script-box .steps{margin-top:10px}
+.script-box{margin-top:16px}
+.script-box summary{cursor:pointer;color:var(--muted);font-size:13px}
+.script-box pre{margin:8px 0 0;max-height:320px;overflow:auto;background:var(--sunk);border-radius:8px;padding:12px;font:12px/1.5 var(--mono);white-space:pre}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:10px;font-size:14px;max-width:calc(100% - 32px);z-index:10}
+
+@media (max-width:760px){
+  .grid,.setup-grid{grid-template-columns:1fr}
+  .route{grid-template-columns:1fr}
+  .route-arrow{transform:rotate(90deg);justify-self:center}
+  .me input{width:120px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="logo">나무 링크런</span><span class="tag">문서 속 링크만 눌러서 목표 문서까지</span></div>
+    <form class="me" id="name-form">
+      <label for="name-input">닉네임</label>
+      <input id="name-input" maxlength="16" placeholder="닉네임 입력" autocomplete="off">
+      <button type="submit" id="name-save">저장</button>
+    </form>
+  </header>
+
+  <div id="room-bar" class="room-bar" hidden>
+    <span>방 <b id="room-name"></b></span>
+    <button type="button" id="room-copy" class="primary">방 링크 복사</button>
+    <span class="spacer"></span>
+    <label for="room-input" class="sr">새 방 이름</label>
+    <input id="room-input" maxlength="30" placeholder="다른 방 이름" autocomplete="off">
+    <button type="button" id="room-new">이 방으로 이동</button>
+  </div>
+  <div id="local-banner" class="banner" hidden>혼자 연습 모드예요. 기록은 이 화면에만 남아요. 친구들과 하려면 claude.ai에서 공유받은 링크로 열어 주세요.</div>
+
+  <section class="stage" aria-live="polite">
+    <div class="stage-meta" id="stage-meta"></div>
+    <div class="route">
+      <a id="start-doc" class="doc-card" target="_blank" rel="noopener"><span class="k">시작 문서</span><span class="v" id="start-v">?</span></a>
+      <div class="route-arrow" aria-hidden="true">→→</div>
+      <div id="target-doc" class="doc-card target"><span class="k">목표 문서</span><span class="v" id="target-v">?</span></div>
+    </div>
+    <div class="clock"><div id="timer" class="timer">00:00.0</div><div id="clock-sub" class="clock-sub"></div></div>
+    <div id="stage-actions" class="stage-actions"></div>
+  </section>
+
+  <div class="grid">
+    <section class="panel" id="run-panel">
+      <h2>내 경로</h2>
+      <form id="log-form">
+        <input id="doc-input" autocomplete="off" placeholder="결과 코드(LR1.…) 또는 도착한 문서 제목" aria-label="결과 코드 또는 도착한 문서">
+        <button type="submit" id="log-btn" class="primary">기록</button>
+      </form>
+      <p class="hint"><b>자동 기록 스크립트</b>를 쓰면 나무위키 화면 구석에 기록판이 뜨고, 완주하면 결과 코드가 복사돼요. 여기에 붙여넣으면 끝이에요. 스크립트 없이 할 때는 도착한 문서 제목이나 주소를 하나씩 기록하세요.</p>
+      <ol id="path" class="path"></ol>
+      <div class="run-actions">
+        <button type="button" id="undo-btn">마지막 기록 취소</button>
+        <button type="button" id="giveup-btn" class="danger">포기</button>
+      </div>
+    </section>
+    <section class="panel" id="board-panel">
+      <h2>이번 라운드 순위</h2>
+      <div id="board"></div>
+    </section>
+  </div>
+
+  <section class="panel" id="setup-panel">
+    <h2>다음 라운드 출제</h2>
+    <div class="setup-grid">
+      <label for="setup-start">시작 문서<input id="setup-start" autocomplete="off" placeholder="예: 김치"></label>
+      <label for="setup-target">목표 문서<input id="setup-target" autocomplete="off" placeholder="예: 블랙홀"></label>
+    </div>
+    <div class="checks">
+      <label for="rule-back"><input type="checkbox" id="rule-back" checked> 뒤로 가기 허용</label>
+      <label for="rule-foot"><input type="checkbox" id="rule-foot"> 각주 속 링크 허용</label>
+    </div>
+    <div class="setup-actions">
+      <button type="button" id="shuffle-btn">랜덤으로 채우기</button>
+      <button type="button" id="start-btn" class="primary">이 문서로 시작</button>
+      <button type="button" id="blind-btn">비공개 랜덤으로 바로 시작</button>
+    </div>
+  </section>
+
+  <section class="panel" id="install-panel">
+    <h2>자동 기록 준비</h2>
+    <h3 class="opt">방법 1 · 북마크 버튼 <span class="tag">추천 · 설치 없음</span></h3>
+    <ol class="steps">
+      <li>아래 <b>북마크 코드 복사</b>를 눌러요.</li>
+      <li>브라우저에서 <b>Ctrl+D</b>로 아무 페이지나 북마크에 추가한 뒤, 그 북마크를 <b>수정</b>해요. 이름은 ‘링크런’, <b>URL 칸</b>에는 복사한 코드를 붙여넣고 저장해요. 북마크바(Ctrl+Shift+B)에 두면 편해요.</li>
+      <li>라운드 때 <b>참가하고 시작 문서 열기</b>로 나무위키가 열리면 그 탭에서 <b>링크런 북마크를 한 번</b> 눌러요. 오른쪽 아래에 기록판이 뜨면 준비 끝이에요.</li>
+      <li>새로고침하거나 새 탭을 열었을 때만 다시 눌러요. 그동안의 기록은 이어져요.</li>
+    </ol>
+    <div class="install-actions">
+      <button type="button" id="copy-bm" class="primary">북마크 코드 복사</button>
+      <span id="script-meta" class="note"></span>
+    </div>
+    <textarea id="bm-src" class="bm-src" readonly hidden aria-label="북마크 코드"></textarea>
+
+    <details class="script-box">
+      <summary>방법 2 · Tampermonkey (자동으로 켜짐, 확장 설치 필요)</summary>
+      <ol class="steps">
+        <li>브라우저에 <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener">Tampermonkey</a> 확장을 설치해요. 크롬은 확장 관리 화면에서 <b>개발자 모드</b>를 켜야 스크립트가 동작해요.</li>
+        <li>Tampermonkey 아이콘 → <b>새 스크립트 만들기</b>를 누르고, 들어 있는 내용을 모두 지워요.</li>
+        <li><b>스크립트 복사</b>를 눌러 붙여넣고 저장해요(Ctrl+S). 이후엔 북마크를 누를 필요 없이 알아서 켜져요.</li>
+      </ol>
+      <div class="install-actions"><button type="button" id="copy-script">스크립트 복사</button></div>
+      <pre id="script-src">불러오는 중…</pre>
+    </details>
+    <p class="hint">기록판 표시: <span class="tag">뒤로</span> 뒤로 가기 · <span class="tag bad">본문 밖</span> 최근 변경·각주 팝업 등 본문 밖 링크 · <span class="tag bad">링크 없이 이동</span> 검색·주소창·랜덤 문서. 표시는 참고용이고, 판정은 친구들끼리 해요.</p>
+  </section>
+
+  <section class="panel">
+    <h2>지난 라운드</h2>
+    <div id="history"><p class="empty">아직 끝난 라운드가 없어요.</p></div>
+  </section>
+</div>
+<div id="toast" class="toast" hidden></div>
+<script type="text/plain" id="userscript-src">
+// ==UserScript==
+// @name         나무 링크런 기록기
+// @namespace    https://claude.ai/linkrun
+// @version      1.1.0
+// @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
+// @match        https://namu.wiki/*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_setClipboard
+// @run-at       document-idle
+// @noframes
+// ==/UserScript==
+
+// 이 파일은 북마크 버전으로도 쓰여요. 게임 페이지가 GM_* 함수를 localStorage로 흉내 내는
+// 감싸개를 붙이고 __LINKRUN_BM 을 정의해서 북마크 코드로 만들어요.
+(function () {
+  'use strict';
+
+  const BM = typeof __LINKRUN_BM !== 'undefined';
+  const mark = document.documentElement.dataset.linkrun;
+  if (mark) {
+    if (BM && mark === 'bm' && window.__linkrunShow) window.__linkrunShow();
+    else if (BM) alert('링크런: Tampermonkey 스크립트가 이미 기록 중이에요. 북마크는 누르지 않아도 돼요.');
+    return;
+  }
+  if (BM && !/linkrun=/.test(location.hash) && !GM_getValue('linkrun.run', null)) {
+    alert('링크런: 진행 중인 라운드가 없어요. 게임 페이지에서 ‘참가하고 시작 문서 열기’로 연 나무위키 탭에서 눌러 주세요.');
+    return;
+  }
+  document.documentElement.dataset.linkrun = BM ? 'bm' : 'tm';
+
+  const RUN = 'linkrun.run';       // 진행 중인 라운드 기록
+  const PEND = 'linkrun.pending';  // 방금 누른 링크 (다음 문서 도착 때 확인)
+
+  /* ---------- 공통 도구 ---------- */
+  const norm = s => (s || '').normalize('NFC').replace(/_/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  function b64e(str) {
+    const b = enc.encode(str); let s = '';
+    for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64d(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    const s = atob(str), b = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+    return dec.decode(b);
+  }
+  function fnv(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return (h >>> 0).toString(16).padStart(8, '0');
+  }
+  function fmt(ms) {
+    if (ms == null || ms < 0) ms = 0;
+    const m = Math.floor(ms / 60000), s = Math.floor(ms / 1000) % 60, d = Math.floor(ms / 100) % 10;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + '.' + d;
+  }
+  function titleOf(href) {
+    try {
+      const u = new URL(href, location.href);
+      if (u.hostname !== 'namu.wiki') return null;
+      const m = u.pathname.match(/^\/w\/(.+)$/);
+      if (!m) return null;
+      return decodeURIComponent(m[1]).replace(/_/g, ' ').trim();
+    } catch (e) { return null; }
+  }
+  const load = () => GM_getValue(RUN, null);
+  const save = run => GM_setValue(RUN, run);
+
+  function makeCode(run) {
+    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, path: run.path }));
+    return 'LR1.' + body + '.' + fnv(body);
+  }
+
+  /* ---------- 1. 링크런 페이지에서 넘어온 시작 정보 ---------- */
+  const hm = location.hash.match(/linkrun=([A-Za-z0-9_-]+)/);
+  if (hm) {
+    try {
+      const d = JSON.parse(b64d(hm[1]));
+      const cur = load();
+      const same = cur && cur.r === d.r && cur.p === d.p && cur.a === d.a;
+      if (!same) save({ r: d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false });
+    } catch (e) { console.warn('[링크런] 시작 정보를 읽지 못했어요', e); }
+    history.replaceState(history.state, '', location.pathname + location.search);
+  }
+
+  /* ---------- 2. 어떤 링크를 눌렀는지 ---------- */
+  // 본문 = 문서 제목(h1)과 분류 링크를 함께 감싸는 가장 작은 영역.
+  // 오른쪽 '최근 변경', 검색창, 각주 팝업 같은 곳은 여기 밖이에요.
+  function contentRoot() {
+    const h1 = document.querySelector('h1');
+    if (!h1) return null;
+    const cat = document.querySelector('a[href^="/w/%EB%B6%84%EB%A5%98:"], a[href^="/w/분류:"]');
+    if (cat) { let e = h1; while (e && !e.contains(cat)) e = e.parentElement; if (e) return e; }
+    let e = h1;
+    for (let i = 0; i < 3 && e.parentElement; i++) e = e.parentElement;
+    return e;
+  }
+  function onClick(ev) {
+    const a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
+    if (!a) return;
+    const t = titleOf(a.href);
+    if (!t) return;
+    const root = contentRoot();
+    GM_setValue(PEND, { t, at: Date.now(), how: root && root.contains(a) ? 'l' : 'o' });
+  }
+  document.addEventListener('click', onClick, true);
+  document.addEventListener('auxclick', onClick, true);
+
+  let lastPop = 0;
+  window.addEventListener('popstate', () => { lastPop = Date.now(); });
+  function navType() { try { return performance.getEntriesByType('navigation')[0].type; } catch (e) { return ''; } }
+
+  /* ---------- 3. 문서 도착 기록 ---------- */
+  // how: l = 본문 링크, o = 본문 밖 링크, b = 뒤로/앞으로, j = 검색·주소창 등 링크 없이 이동
+  let lastUrl = null, first = true;
+  function check() {
+    if (location.href === lastUrl) return;
+    lastUrl = location.href;
+    const isFirst = first; first = false;
+    const run = load();
+    if (!run || run.f != null || run.g) { render(true); return; }
+    const t = titleOf(location.href);
+    if (!t) { render(true); return; }
+    const last = run.path.length ? run.path[run.path.length - 1][0] : run.s;
+    if (norm(t) === norm(last)) { GM_setValue(PEND, null); render(true); return; }
+
+    // 페이지를 새로 불러온 직후라면(북마크를 나중에 눌렀을 수 있음) 도착 시각 = 페이지를 불러온 시각
+    let now = Date.now();
+    if (isFirst) {
+      try {
+        const nav = performance.getEntriesByType('navigation')[0];
+        if (nav && nav.name.split('#')[0] === location.href.split('#')[0]) now = Math.round(performance.timeOrigin);
+      } catch (e) { /* 그대로 현재 시각 사용 */ }
+    }
+    const from = new URL(location.href).searchParams.get('from');
+    const pend = GM_getValue(PEND, null);
+    let how = 'j';
+    if (pend && now - pend.at < 10000 && (norm(pend.t) === norm(t) || (from && norm(pend.t) === norm(from)))) how = pend.how;
+    else if (now - lastPop < 2000 || (isFirst && navType() === 'back_forward')) how = 'b';
+    GM_setValue(PEND, null);
+
+    const ms = now - run.a;
+    run.path.push([t, ms, how]);
+    if (norm(t) === norm(run.t) || (from && norm(from) === norm(run.t))) run.f = ms;
+    save(run);
+    render(true);
+    if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
+  }
+  setInterval(check, 250);
+
+  /* ---------- 4. 화면 구석 기록판 ---------- */
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483647;';
+  const sh = host.attachShadow({ mode: 'open' });
+  sh.innerHTML = `
+<style>
+  .box{width:270px;background:#13201B;color:#E4EEE9;border:1px solid #2C4238;border-radius:12px;padding:12px 14px;
+       font:13px/1.5 "Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .brand{font-weight:700;color:#3FC195}
+  .timer{font:700 24px/1.1 ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums;margin:6px 0 2px}
+  .goal{color:#8FA59B}.goal b{color:#E4EEE9}
+  .stat{color:#8FA59B;font-size:12px}
+  ol{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:120px;overflow:auto}
+  li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tag{font-size:10.5px;border-radius:4px;padding:0 4px;margin-left:4px;background:#2C4238;color:#E4EEE9}
+  .tag.bad{background:#7A2A24}
+  .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  button{font:inherit;font-size:12px;border:1px solid #2C4238;background:#1C2A24;color:#E4EEE9;border-radius:6px;padding:4px 9px;cursor:pointer}
+  button.primary{background:#3FC195;color:#06140F;border-color:#3FC195;font-weight:700}
+  button.armed{background:#C8453B;border-color:#C8453B;color:#fff}
+  .msg{margin-top:8px;font-size:12px;color:#3FC195}
+  .done{color:#3FC195;font-weight:700}
+  .mini{cursor:pointer;background:#13201B;color:#3FC195;border:1px solid #2C4238;border-radius:999px;padding:6px 12px;font:700 13px system-ui,sans-serif}
+  textarea{width:100%;height:56px;margin-top:6px;font:11px ui-monospace,Consolas,monospace;background:#0B1310;color:#E4EEE9;border:1px solid #2C4238;border-radius:6px;resize:none}
+  [hidden]{display:none!important}
+</style>
+<button class="mini" id="mini" hidden></button>
+<div class="box" id="box">
+  <div class="row"><span class="brand" id="round">링크런</span><button id="fold" title="접기">접기</button></div>
+  <div class="timer" id="timer">00:00.0</div>
+  <div class="goal">목표 <b id="target"></b></div>
+  <div class="stat" id="stat"></div>
+  <ol id="path"></ol>
+  <div class="btns">
+    <button class="primary" id="copy" hidden>결과 코드 복사</button>
+    <button id="giveup">포기</button>
+    <button id="clear" hidden>기록 지우기</button>
+  </div>
+  <div class="msg" id="msg" hidden></div>
+  <textarea id="code" readonly hidden></textarea>
+</div>`;
+  const $ = id => sh.getElementById(id);
+  let folded = false, armed = null, armTimer = null, msgTimer = null, lastLen = -1, lastState = '';
+
+  function flash(text) {
+    const m = $('msg'); m.textContent = text; m.hidden = false;
+    clearTimeout(msgTimer); msgTimer = setTimeout(() => { m.hidden = true; }, 5000);
+  }
+  function copyCode(okText) {
+    const run = load(); if (!run) return;
+    const code = makeCode(run);
+    const fail = () => { $('code').value = code; $('code').hidden = false; $('code').select(); flash('자동 복사가 막혔어요. 아래 칸의 코드를 Ctrl+C로 복사하세요.'); };
+    try { Promise.resolve(GM_setClipboard(code, 'text')).then(() => flash(okText), fail); } catch (e) { fail(); }
+  }
+  function arm(name, fn) {
+    if (armed === name) { armed = null; clearTimeout(armTimer); fn(); render(true); return; }
+    armed = name; render(true);
+    clearTimeout(armTimer); armTimer = setTimeout(() => { armed = null; render(true); }, 3000);
+  }
+  $('fold').onclick = () => { folded = true; render(true); };
+  $('mini').onclick = () => { folded = false; render(true); };
+  $('copy').onclick = () => copyCode('결과 코드를 복사했어요. 링크런 페이지의 입력칸에 붙여넣으세요.');
+  $('giveup').onclick = () => arm('giveup', () => {
+    const run = load(); if (!run || run.f != null) return;
+    run.g = true; save(run); copyCode('포기했어요. 결과 코드를 복사했어요.');
+  });
+  window.__linkrunShow = () => { folded = false; render(true); flash('기록 중이에요. 다시 누르지 않아도 돼요.'); };
+  $('clear').onclick = () => arm('clear', () => { GM_setValue(RUN, null); });
+
+  const TAG = { o: ['본문 밖', true], b: ['뒤로', false], j: ['링크 없이 이동', true] };
+  function render(full) {
+    const run = load();
+    if (!run) { host.remove(); return; }
+    if (!host.isConnected) document.body.appendChild(host);
+    $('box').hidden = folded; $('mini').hidden = !folded;
+
+    const now = Date.now();
+    const state = run.f != null ? 'done' : run.g ? 'out' : 'run';
+    const timerText = state === 'done' ? fmt(run.f) : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
+    $('timer').textContent = timerText;
+    $('mini').textContent = '링크런 ' + timerText;
+    if (!full && run.path.length === lastLen && state === lastState) return;
+    lastLen = run.path.length; lastState = state;
+
+    $('round').textContent = '링크런 ' + run.r + 'R';
+    $('target').textContent = run.t;
+    const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j').length;
+    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : '');
+    $('stat').className = state === 'done' ? 'stat done' : 'stat';
+
+    const ol = $('path'); ol.replaceChildren();
+    const items = [[run.s, 0, 's'], ...run.path];
+    for (const [t, ms, how] of items.slice(-6)) {
+      const li = document.createElement('li');
+      li.textContent = (how === 's' ? '출발 ' : fmt(ms) + ' ') + t;
+      if (TAG[how]) { const s = document.createElement('span'); s.className = 'tag' + (TAG[how][1] ? ' bad' : ''); s.textContent = TAG[how][0]; li.appendChild(s); }
+      ol.appendChild(li);
+    }
+    ol.scrollTop = ol.scrollHeight;
+
+    $('copy').hidden = state === 'run';
+    $('giveup').hidden = state !== 'run';
+    $('clear').hidden = state === 'run';
+    $('giveup').textContent = armed === 'giveup' ? '한 번 더 누르면 포기' : '포기';
+    $('giveup').className = armed === 'giveup' ? 'armed' : '';
+    $('clear').textContent = armed === 'clear' ? '한 번 더 누르면 지워요' : '기록 지우기';
+    $('clear').className = armed === 'clear' ? 'armed' : '';
+  }
+  setInterval(() => render(false), 200);
+  check();
+  render(true);
+})();
+</script>
+
+<script>
+const TITLES = ["김치","떡볶이","라면","삼겹살","비빔밥","치킨","커피","초콜릿","소주","수박","바나나","고양이","개","펭귄","상어","고래","개미","꿀벌","공룡","티라노사우루스","블랙홀","태양","달","화성","은하수","원자","DNA","전기","인공지능","인터넷","컴퓨터","스마트폰","비트코인","한글","세종대왕","이순신","나폴레옹 보나파르트","알베르트 아인슈타인","아이작 뉴턴","레오나르도 다 빈치","모나리자","루트비히 판 베토벤","에펠탑","만리장성","독도","제주도","서울특별시","부산광역시","일본","브라질","이집트","남극","에베레스트 산","아마존 강","로마 제국","조선","고구려","축구","야구","올림픽","손흥민","페이커","아이유","방탄소년단","피카츄","포켓몬스터","슈퍼 마리오","마인크래프트","리그 오브 레전드","테트리스","해리 포터 시리즈","스타벅스","우유","해바라기","피아노"];
+const COUNTDOWN_MS = 5000;
+
+const $ = s => document.querySelector(s);
+function lsGet(k){ try { return localStorage.getItem(k); } catch { return null; } }
+function lsSet(k,v){ try { localStorage.setItem(k,v); } catch {} }
+function h(tag, attrs, ...kids){
+  const el = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs||{})) {
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) el.append(c instanceof Node ? c : String(c));
+  return el;
+}
+
+const me = { id: lsGet("linkrun.pid"), name: lsGet("linkrun.name") || "" };
+if (!me.id) { me.id = "p" + Math.random().toString(36).slice(2,10) + Date.now().toString(36); lsSet("linkrun.pid", me.id); }
+
+let db = null, isLocal = false;
+let state = null, players = [], history = [];
+let armedEnd = false, armedGiveUp = false, lastCounting = null;
+
+/* ---------- helpers ---------- */
+const norm = s => (s||"").normalize("NFC").replace(/_/g," ").replace(/\s+/g," ").trim().toLowerCase();
+function parseTitle(raw){
+  let v = (raw||"").trim();
+  const m = v.match(/namu\.wiki\/w\/([^?#]+)/);
+  if (m) { try { v = decodeURIComponent(m[1]); } catch { v = m[1]; } }
+  v = v.replace(/#.*$/,"").replace(/_/g," ").replace(/\s+/g," ").trim();
+  return v;
+}
+/* 결과 코드: 자동 기록 스크립트(linkrun.user.js)와 같은 형식 */
+function b64e(str){
+  const b = new TextEncoder().encode(str); let s = "";
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function b64d(str){
+  str = str.replace(/-/g,"+").replace(/_/g,"/");
+  while (str.length % 4) str += "=";
+  const s = atob(str), b = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+  return new TextDecoder().decode(b);
+}
+function fnv(str){
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(16).padStart(8,"0");
+}
+function readCode(code){
+  const m = code.replace(/\s+/g,"").match(/^LR1\.([A-Za-z0-9_-]+)\.([0-9a-f]{8})$/);
+  if (!m || fnv(m[1]) !== m[2]) return null;
+  try { return JSON.parse(b64d(m[1])); } catch { return null; }
+}
+const namuUrl = t => "https://namu.wiki/w/" + t.split("/").map(encodeURIComponent).join("/");
+function fmt(ms){
+  if (ms == null || ms < 0) ms = 0;
+  const m = Math.floor(ms/60000), s = Math.floor(ms/1000)%60, d = Math.floor(ms/100)%10;
+  return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+"."+d;
+}
+const startLink = g => namuUrl(g.start) + "#linkrun=" + b64e(JSON.stringify({ r: g.round, s: g.start, t: g.target, a: g.startAt, p: me.id }));
+const HOW = { b: "뒤로", o: "본문 밖", j: "링크 없이 이동" };
+const isWarn = (how, rules) => how === "o" || how === "j" || (how === "b" && !(rules && rules.back));
+function pick2(){
+  const a = Math.floor(Math.random()*TITLES.length);
+  let b; do { b = Math.floor(Math.random()*TITLES.length); } while (b === a);
+  return [TITLES[a], TITLES[b]];
+}
+let toastTimer;
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>{ t.hidden = true; }, 3200);
+}
+function onWriteErr(e){
+  console.warn(e);
+  if (e && e.code === "invalid_argument") toast("저장하지 못했어요. 이 페이지에 편집 권한이 있는지 확인해 주세요.");
+  else if (e && e.code === "permission-denied") toast("저장하지 못했어요. Firebase 보안 규칙(firestore.rules)이 적용됐는지 확인해 주세요.");
+  else if (e && e.code === "resource_exhausted") toast("너무 빨리 기록하고 있어요. 잠시 후 다시 시도해 주세요.");
+  else toast("저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+}
+
+const G = () => state || { round: 0, status: "lobby" };
+const now = () => Date.now();
+const roundPlayers = () => players.filter(p => p.round === G().round && G().round > 0);
+const mine = () => roundPlayers().find(p => p.id === me.id) || null;
+const isCounting = () => G().status === "running" && now() < G().startAt;
+const isLive = () => G().status === "running" && now() >= G().startAt;
+
+/* ---------- local fallback store ---------- */
+function makeLocalDb(){
+  const docs = new Map(), subs = new Set();
+  const snap = p => { const d = docs.get(p); return { id: p.split("/").pop(), exists: !!d, data: () => d, metadata: {} }; };
+  const notify = () => subs.forEach(f => f());
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const doc = p => ({
+    path: p, id: p.split("/").pop(),
+    get: async () => snap(p),
+    set: async d => { docs.set(p, clone(d)); notify(); },
+    update: async d => { const c = docs.get(p); if (!c) throw { code: "invalid_argument" }; docs.set(p, { ...c, ...clone(d) }); notify(); },
+    delete: async () => { docs.delete(p); notify(); },
+    onSnapshot(next){ const f = () => next(snap(p)); subs.add(f); setTimeout(f); return () => subs.delete(f); }
+  });
+  const collection = cp => ({
+    path: cp, doc: id => doc(cp + "/" + id),
+    onSnapshot(next){
+      const depth = cp.split("/").length + 1;
+      const f = () => { const ds = [...docs.keys()].filter(k => k.startsWith(cp + "/") && k.split("/").length === depth).sort().map(snap); next({ docs: ds, size: ds.length, empty: !ds.length }); };
+      subs.add(f); setTimeout(f); return () => subs.delete(f);
+    }
+  });
+  return { doc, collection };
+}
+
+/* ---------- writes ---------- */
+let chain = Promise.resolve();
+function queue(fn){ chain = chain.then(fn).catch(onWriteErr); return chain; }
+const myRef = () => db.doc("players/" + me.id);
+
+function needName(){
+  if (me.name) return false;
+  toast("먼저 오른쪽 위에 닉네임을 입력해 주세요.");
+  $("#name-input").focus();
+  return true;
+}
+function join(){
+  if (needName() || !isLive() || mine()) return;
+  queue(() => myRef().set({ name: me.name, round: G().round, path: [], finishedMs: null, gaveUp: false, joinedAt: now() }));
+}
+function applyCode(code){
+  const g = G(), d = readCode(code);
+  if (!d) { toast("결과 코드가 잘렸거나 잘못됐어요. 기록판의 ‘결과 코드 복사’를 다시 눌러 붙여넣어 주세요."); return; }
+  if (g.status !== "running" || d.r !== g.round) { toast("이번 라운드(" + (g.round || 0) + "R) 코드가 아니에요. 코드는 " + d.r + "R 기록이에요."); return; }
+  if (norm(d.s) !== norm(g.start) || norm(d.t) !== norm(g.target)) { toast("시작·목표 문서가 이번 라운드와 달라요."); return; }
+  if (d.p !== me.id) { toast("다른 사람(또는 다른 브라우저)에서 시작한 코드예요. 이 화면에서 참가 버튼으로 연 기록만 올릴 수 있어요."); return; }
+  const p = mine();
+  if (p && (p.finishedMs != null || p.gaveUp)) { toast("이미 이번 라운드 기록이 확정됐어요."); return; }
+  const path = (d.path || []).slice(0, 500).map(x => ({ t: String(x[0]).slice(0, 200), ms: Number(x[1]) || 0, how: ["l","o","b","j"].includes(x[2]) ? x[2] : "j" }));
+  const last = path[path.length - 1];
+  const finishedMs = last && norm(last.t) === norm(g.target) ? last.ms : (d.f != null ? Number(d.f) : null);
+  const body = { name: me.name, round: g.round, path, finishedMs, gaveUp: !!d.g && finishedMs == null, auto: true, joinedAt: p ? p.joinedAt : now() };
+  queue(() => myRef().set(body));
+  const warn = path.filter(x => isWarn(x.how, g.rules)).length;
+  toast(finishedMs != null ? "완주 기록을 올렸어요. " + fmt(finishedMs) + " · " + path.length + "클릭" + (warn ? " · 경고 " + warn : "") : body.gaveUp ? "포기 기록을 올렸어요." : "지금까지의 경로를 올렸어요.");
+}
+function logDoc(raw){
+  if (needName()) return;
+  if (/^\s*LR1\./.test(raw)) return applyCode(raw);
+  const p = mine(); const g = G();
+  if (!p && isLive()) { toast("먼저 ‘참가하고 시작 문서 열기’를 눌러 참가해 주세요."); return; }
+  if (!p || p.finishedMs != null || p.gaveUp || !isLive()) return;
+  const t = parseTitle(raw);
+  if (!t) return;
+  const last = p.path.length ? p.path[p.path.length-1].t : g.start;
+  if (norm(t) === norm(last)) { toast("방금 기록한 문서와 같아요."); return; }
+  const ms = now() - g.startAt;
+  const path = [...p.path, { t, ms, how: "m" }];
+  const done = norm(t) === norm(g.target);
+  queue(() => myRef().update({ path, finishedMs: done ? ms : null }));
+  if (done) toast("완주! " + fmt(ms) + " · " + path.length + "클릭");
+}
+function undo(){
+  const p = mine();
+  if (!p || p.finishedMs != null || p.gaveUp || !p.path.length) return;
+  queue(() => myRef().update({ path: p.path.slice(0,-1) }));
+}
+function giveUp(){
+  const p = mine();
+  if (!p || p.finishedMs != null || p.gaveUp) return;
+  if (!armedGiveUp) { armedGiveUp = true; render(); setTimeout(()=>{ armedGiveUp = false; render(); }, 3000); return; }
+  armedGiveUp = false;
+  queue(() => myRef().update({ gaveUp: true }));
+}
+function startRound(start, target, blind){
+  if (needName()) return;
+  start = parseTitle(start); target = parseTitle(target);
+  if (!start || !target) { toast("시작 문서와 목표 문서를 모두 입력해 주세요."); return; }
+  if (norm(start) === norm(target)) { toast("시작과 목표가 같은 문서예요."); return; }
+  const next = {
+    round: (G().round || 0) + 1, status: "running", start, target, blind: !!blind,
+    startAt: now() + COUNTDOWN_MS, host: me.name,
+    rules: { back: $("#rule-back").checked, foot: $("#rule-foot").checked }
+  };
+  queue(() => db.doc("game/state").set(next));
+  $("#setup-start").value = ""; $("#setup-target").value = "";
+}
+function endRound(){
+  if (!armedEnd) { armedEnd = true; render(); setTimeout(()=>{ armedEnd = false; render(); }, 3000); return; }
+  armedEnd = false;
+  const g = G();
+  const results = sortBoard(roundPlayers()).map(p => ({
+    name: p.name, finishedMs: p.finishedMs, gaveUp: !!p.gaveUp, clicks: p.path.length, auto: !!p.auto,
+    warns: warnCount(p.path, g.rules), path: p.path.map(x => ({ t: x.t, how: x.how || "m" }))
+  }));
+  queue(async () => {
+    await db.doc("history/r" + g.round).set({ round: g.round, start: g.start, target: g.target, rules: g.rules || {}, startAt: g.startAt, endedAt: now(), results });
+    await db.doc("game/state").update({ status: "ended", endedAt: now() });
+  });
+}
+function saveName(){
+  const v = $("#name-input").value.trim().slice(0,16);
+  if (!v) { toast("닉네임을 입력해 주세요."); return; }
+  me.name = v; lsSet("linkrun.name", v);
+  if (mine()) queue(() => myRef().update({ name: v }));
+  toast("닉네임을 '" + v + "'(으)로 저장했어요.");
+  render();
+}
+
+/* ---------- render ---------- */
+function statusOf(p){
+  if (p.finishedMs != null) return { cls: "done", label: "완주" };
+  if (p.gaveUp) return { cls: "out", label: "포기" };
+  return { cls: "run", label: "달리는 중" };
+}
+function sortBoard(list){
+  const score = p => p.finishedMs != null ? 0 : p.gaveUp ? 2 : 1;
+  return [...list].sort((a,b) => score(a)-score(b)
+    || (score(a) === 0 ? (a.finishedMs - b.finishedMs) || (a.path.length - b.path.length) : 0)
+    || (score(a) === 1 ? b.path.length - a.path.length : 0)
+    || (a.name||"").localeCompare(b.name||""));
+}
+function pathList(titles, opts){
+  const { start, goalIdx, withMs, rules } = opts || {};
+  const items = [];
+  if (start) items.push(h("li", { class: "first" }, h("a", { href: namuUrl(start), target: "_blank", rel: "noopener" }, start)));
+  titles.forEach((x, i) => {
+    const o = typeof x === "string" ? { t: x } : Array.isArray(x) ? { t: x[0], how: x[1] } : x;
+    const warn = isWarn(o.how, rules);
+    items.push(h("li", { class: [i === goalIdx ? "goal" : "", warn ? "warn" : ""].join(" ").trim() || null },
+      h("a", { href: namuUrl(o.t), target: "_blank", rel: "noopener" }, o.t),
+      HOW[o.how] ? h("span", { class: "tag" + (warn ? " bad" : "") }, HOW[o.how]) : null,
+      withMs && o.ms != null ? h("span", { class: "ms" }, fmt(o.ms)) : null));
+  });
+  return items;
+}
+const warnCount = (path, rules) => (path || []).filter(x => isWarn(Array.isArray(x) ? x[1] : x.how, rules)).length;
+
+function renderStage(){
+  const g = G(), p = mine();
+  const counting = isCounting(), live = isLive(), started = g.round > 0;
+  const reveal = started && !counting;
+  const meta = $("#stage-meta"); meta.replaceChildren();
+  meta.append(h("span", { class: "round" }, started ? g.round + "라운드" : "대기실"));
+  const pill = g.status === "running" ? (counting ? ["run","곧 시작"] : ["run","진행 중"]) : g.status === "ended" ? ["done","종료"] : ["","출제 대기"];
+  meta.append(h("span", { class: "pill " + pill[0] }, pill[1]));
+  if (started) {
+    meta.append(h("span", { class: "rule" }, "검색·주소창 금지"));
+    meta.append(h("span", { class: "rule" }, g.rules && g.rules.back ? "뒤로 가기 허용" : "뒤로 가기 금지"));
+    meta.append(h("span", { class: "rule" }, g.rules && g.rules.foot ? "각주 링크 허용" : "각주 링크 금지"));
+    if (g.host) meta.append(h("span", { class: "rule" }, "출제 " + g.host));
+  }
+
+  const sa = $("#start-doc");
+  $("#start-v").textContent = reveal ? g.start : (started ? "곧 공개" : "?");
+  $("#target-v").textContent = reveal ? g.target : (started ? "곧 공개" : "?");
+  if (reveal) sa.setAttribute("href", g.status === "running" ? startLink(g) : namuUrl(g.start)); else sa.removeAttribute("href");
+
+  renderClock();
+
+  const acts = $("#stage-actions"); acts.replaceChildren();
+  if (g.status === "running") {
+    if (counting) acts.append(h("button", { class: "primary", disabled: true }, "참가하고 시작 문서 열기 ↗"));
+    else if (!p) acts.append(h("a", { class: "primary", href: startLink(g), target: "_blank", rel: "noopener", onclick: e => { if (!me.name) { e.preventDefault(); needName(); return; } join(); } }, "참가하고 시작 문서 열기 ↗"));
+    else {
+      acts.append(h("span", { class: "note" }, p.finishedMs != null ? "완주했어요. 다른 사람을 기다리는 중" : p.gaveUp ? "다음 라운드에서 만나요" : "나무위키 탭에서 링크만 눌러 이동하세요. 끝나면 결과 코드를 붙여넣어요."));
+      if (p.finishedMs == null && !p.gaveUp) acts.append(h("a", { href: startLink(g), target: "_blank", rel: "noopener", class: "note" }, "시작 문서 다시 열기 ↗"));
+    }
+    acts.append(h("span", { class: "spacer" }));
+    acts.append(h("button", { class: "danger" + (armedEnd ? " armed" : ""), onclick: endRound }, armedEnd ? "한 번 더 누르면 종료" : "라운드 끝내기"));
+  } else if (g.status === "ended") {
+    acts.append(h("span", { class: "note" }, "결과와 모든 경로가 공개됐어요. 아래에서 다음 라운드를 출제하세요."));
+  }
+}
+
+/* Updates only the clock text, so the 100ms tick never replaces buttons mid-click. */
+function renderClock(){
+  const g = G(), p = mine();
+  const counting = isCounting(), live = isLive(), started = g.round > 0;
+  const timer = $("#timer"), sub = $("#clock-sub");
+  timer.classList.toggle("counting", counting);
+  if (counting) { timer.textContent = String(Math.ceil((g.startAt - now())/1000)); sub.textContent = "초 뒤 시작 문서가 공개돼요"; }
+  else if (!started) { timer.textContent = fmt(0); sub.textContent = "아래에서 문서를 정하고 라운드를 시작하세요"; }
+  else if (p && p.finishedMs != null) { timer.textContent = fmt(p.finishedMs); sub.textContent = "완주 · " + p.path.length + "클릭"; }
+  else if (live) { timer.textContent = fmt(now() - g.startAt); sub.textContent = p ? (p.gaveUp ? "포기했어요" : p.path.length + "클릭째") : "라운드 경과 시간"; }
+  else { timer.textContent = fmt((g.endedAt || now()) - g.startAt); sub.textContent = "라운드 종료"; }
+}
+
+function renderRun(){
+  const p = mine(), g = G();
+  const canLog = !!p && isLive() && p.finishedMs == null && !p.gaveUp;
+  const canInput = isLive() && !(p && (p.finishedMs != null || p.gaveUp));
+  $("#doc-input").disabled = !canInput; $("#log-btn").disabled = !canInput;
+  $("#undo-btn").disabled = !canLog || !p.path.length;
+  const gu = $("#giveup-btn"); gu.disabled = !canLog;
+  gu.classList.toggle("armed", armedGiveUp); gu.textContent = armedGiveUp ? "한 번 더 누르면 포기" : "포기";
+  const ol = $("#path"); ol.replaceChildren();
+  if (!p) {
+    ol.append(h("li", { class: "empty" }, g.status === "running" ? (isCounting() ? "카운트다운이 끝나면 참가할 수 있어요." : "위의 ‘참가하고 시작 문서 열기’를 누르면 시작돼요.") : "라운드가 시작되면 여기에 경로가 쌓여요."));
+    return;
+  }
+  ol.append(...pathList(p.path, { start: g.start, goalIdx: p.finishedMs != null ? p.path.length-1 : -1, withMs: true, rules: g.rules }));
+}
+
+function renderBoard(){
+  const g = G(), box = $("#board"); box.replaceChildren();
+  const list = sortBoard(roundPlayers());
+  if (!list.length) { box.append(h("p", { class: "empty" }, g.round ? "아직 참가한 사람이 없어요." : "라운드가 시작되면 참가자가 여기에 떠요.")); return; }
+  const p = mine();
+  const iAmDone = p && (p.finishedMs != null || p.gaveUp);
+  const revealAll = g.status === "ended" || iAmDone;
+  let rank = 0;
+  for (const q of list) {
+    const st = statusOf(q);
+    if (st.cls === "done") rank++;
+    const row = h("div", { class: "board-row" },
+      h("div", { class: "rank" + (st.cls === "done" && rank === 1 ? " r1" : "") }, st.cls === "done" ? rank : "–"),
+      h("div", { class: "who" }, h("span", { class: "nm" }, q.name || "이름 없음"), q.id === me.id ? h("span", { class: "you" }, "나") : null, h("span", { class: "pill " + st.cls }, st.label),
+        q.auto ? h("span", { class: "pill auto", title: "자동 기록 스크립트로 올린 기록" }, "자동") : null,
+        warnCount(q.path, g.rules) ? h("span", { class: "pill warn" }, "경고 " + warnCount(q.path, g.rules)) : null),
+      h("div", { class: "num" }, q.path.length, h("small", {}, " 클릭")),
+      h("div", { class: "num" }, q.finishedMs != null ? fmt(q.finishedMs) : "—"));
+    const pathBox = h("div", { class: "row-path" });
+    if (revealAll || q.id === me.id) {
+      if (q.path.length) pathBox.append(h("ol", { class: "path" }, pathList(q.path, { start: g.start, goalIdx: q.finishedMs != null ? q.path.length-1 : -1, rules: g.rules })));
+    } else if (q.path.length) pathBox.append(h("span", { class: "hidden" }, "경로는 내가 완주하거나 포기하면 공개돼요"));
+    if (pathBox.childNodes.length) row.append(pathBox);
+    box.append(row);
+  }
+}
+
+function renderSetup(){
+  const g = G();
+  $("#setup-panel").hidden = g.status === "running";
+}
+
+function renderHistory(){
+  const box = $("#history"); box.replaceChildren();
+  if (!history.length) { box.append(h("p", { class: "empty" }, "아직 끝난 라운드가 없어요.")); return; }
+  for (const r of history) {
+    const win = (r.results || []).find(x => x.finishedMs != null);
+    const table = h("table", {}, h("tbody", {}, (r.results || []).map((x, i) => h("tr", {},
+      h("td", {}, x.name || "이름 없음"),
+      h("td", { class: "num" }, x.finishedMs != null ? fmt(x.finishedMs) : x.gaveUp ? "포기" : "미완주"),
+      h("td", { class: "num" }, x.clicks + "클릭" + (x.warns ? " · 경고 " + x.warns : "")),
+      h("td", {}, h("ol", { class: "path" }, pathList(x.path || [], { start: r.start, goalIdx: x.finishedMs != null ? (x.path||[]).length-1 : -1, rules: r.rules })))))));
+    box.append(h("details", { class: "hist" },
+      h("summary", {}, h("span", { class: "rn" }, r.round + "R"), h("span", { class: "pair" }, r.start + " → " + r.target),
+        h("span", { class: "win" }, win ? "우승 " + (win.name || "이름 없음") + " · " + fmt(win.finishedMs) + " · " + win.clicks + "클릭" : "완주자 없음")),
+      h("div", { class: "hist-scroll" }, table)));
+  }
+}
+
+function render(){
+  $("#local-banner").hidden = !isLocal;
+  if (document.activeElement !== $("#name-input")) $("#name-input").value = me.name;
+  renderStage(); renderRun(); renderBoard(); renderSetup(); renderHistory();
+}
+
+/* ---------- wiring ---------- */
+$("#name-form").addEventListener("submit", e => { e.preventDefault(); saveName(); });
+$("#log-form").addEventListener("submit", e => { e.preventDefault(); const i = $("#doc-input"); logDoc(i.value); i.value = ""; i.focus(); });
+$("#start-doc").addEventListener("click", e => {
+  if (!$("#start-doc").hasAttribute("href") || mine() || !isLive()) return;
+  if (!me.name) { e.preventDefault(); needName(); return; }
+  join();
+});
+$("#undo-btn").addEventListener("click", undo);
+
+let scriptText = "", bmText = "";
+/* 북마크 코드 = GM_* 를 localStorage로 흉내 내는 감싸개 + 자동 기록 스크립트 본문 */
+function toBookmarklet(src){
+  const body = src.replace(/^\/\/ ==UserScript==[\s\S]*?\/\/ ==\/UserScript==\s*/, "")
+    .split("\n").filter(l => !/^\s*\/\//.test(l)).map(l => l.trim()).filter(Boolean).join("\n");
+  const shim = "var __LINKRUN_BM=1;" +
+    "if(location.hostname!=='namu.wiki'){alert('링크런: 나무위키 문서 화면에서 눌러 주세요.');return;}" +
+    "var GM_getValue=function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};" +
+    "var GM_setValue=function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};" +
+    "var GM_setClipboard=function(t){return navigator.clipboard.writeText(t)};";
+  return "javascript:" + encodeURIComponent("(function(){" + shim + "\n" + body + "\n})()");
+}
+function copyText(text, fallback, okMsg){
+  navigator.clipboard.writeText(text).then(() => toast(okMsg), () => { fallback(); toast("자동 복사가 막혔어요. 선택된 내용을 Ctrl+C로 복사해 주세요."); });
+}
+/* 스크립트 본문은 build.py가 linkrun.user.js에서 아래 <script type="text/plain">에 넣어요. */
+(() => {
+  const t = ($("#userscript-src") || {}).textContent || "";
+  if (!t.includes("==UserScript==")) { $("#script-src").textContent = "스크립트가 페이지에 들어 있지 않아요. build.py를 실행한 뒤 다시 게시해야 해요."; return; }
+  scriptText = t.trim() + "\n"; bmText = toBookmarklet(scriptText);
+  $("#script-src").textContent = scriptText; $("#bm-src").value = bmText;
+  const v = t.match(/@version\s+(\S+)/); $("#script-meta").textContent = v ? "버전 " + v[1] : "";
+})();
+$("#copy-bm").addEventListener("click", () => {
+  if (!bmText) { toast("북마크 코드를 아직 불러오는 중이에요."); return; }
+  copyText(bmText, () => { const a = $("#bm-src"); a.hidden = false; a.focus(); a.select(); }, "북마크 코드를 복사했어요. 북마크의 URL 칸에 붙여넣으세요.");
+});
+$("#copy-script").addEventListener("click", () => {
+  if (!scriptText) { toast("스크립트를 아직 불러오는 중이에요."); return; }
+  copyText(scriptText, () => {
+    const r = document.createRange(); r.selectNodeContents($("#script-src"));
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  }, "스크립트를 복사했어요. Tampermonkey 새 스크립트에 붙여넣으세요.");
+});
+$("#giveup-btn").addEventListener("click", giveUp);
+$("#shuffle-btn").addEventListener("click", () => { const [a,b] = pick2(); $("#setup-start").value = a; $("#setup-target").value = b; });
+$("#start-btn").addEventListener("click", () => startRound($("#setup-start").value, $("#setup-target").value, false));
+$("#blind-btn").addEventListener("click", () => { const [a,b] = pick2(); startRound(a, b, true); });
+
+setInterval(() => {
+  const g = G();
+  if (g.status !== "running") return;
+  const c = isCounting();
+  if (c !== lastCounting) { lastCounting = c; render(); }
+  else renderClock();
+}, 100);
+
+function subscribe(){
+  const err = e => { console.warn(e); toast("실시간 연결이 끊겼어요. 새로고침해 주세요."); };
+  db.doc("game/state").onSnapshot(s => { state = s.exists ? s.data() : null; armedEnd = false; render(); }, err);
+  db.collection("players").onSnapshot(q => { players = q.docs.map(d => ({ id: d.id, ...d.data(), path: (d.data().path || []) })); render(); }, err);
+  db.collection("history").onSnapshot(q => { history = q.docs.map(d => d.data()).sort((a,b) => b.round - a.round); render(); }, err);
+}
+
+/* 사이트 버전(docs/index.html)은 firebase-config.js가 LINKRUN_FIREBASE를 정해요.
+   방은 주소 끝의 #방이름 으로 나뉘어요. 없으면 main. */
+const SITE = typeof window.LINKRUN_FIREBASE !== "undefined";
+const ROOM = (decodeURIComponent(location.hash.slice(1)).replace(/[^0-9A-Za-z가-힣_-]/g, "").slice(0, 30)) || "main";
+function roomDb(fs){
+  const base = "rooms/" + ROOM + "/";
+  return { doc: p => fs.doc(base + p), collection: p => fs.collection(base + p) };
+}
+function setupSiteUi(){
+  const bar = $("#room-bar"); bar.hidden = false;
+  $("#room-name").textContent = ROOM;
+  $("#room-copy").addEventListener("click", () => {
+    const url = location.href.split("#")[0] + "#" + encodeURIComponent(ROOM);
+    copyText(url, () => toast(url), "방 링크를 복사했어요. 친구에게 보내세요.");
+  });
+  $("#room-new").addEventListener("click", () => {
+    const n = $("#room-input").value.replace(/[^0-9A-Za-z가-힣_-]/g, "").slice(0, 30);
+    if (!n) { toast("방 이름은 한글·영문·숫자·-·_ 로 입력해 주세요."); return; }
+    location.hash = encodeURIComponent(n); location.reload();
+  });
+  $("#local-banner").textContent = "Firebase 설정이 아직 없어서 혼자 연습 모드예요. firebase-config.js를 채운 뒤 다시 올려 주세요.";
+}
+window.addEventListener("hashchange", () => { if (SITE) location.reload(); });
+
+render();
+(async () => {
+  let real = null;
+  if (SITE) {
+    setupSiteUi();
+    try {
+      if (window.LINKRUN_FIREBASE && window.firebase) {
+        if (!firebase.apps.length) firebase.initializeApp(window.LINKRUN_FIREBASE);
+        real = roomDb(firebase.firestore());
+      }
+    } catch (e) { console.warn(e); real = null; }
+  } else {
+    try { real = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { real = null; }
+  }
+  db = real || makeLocalDb(); isLocal = !real;
+  subscribe(); render();
+})();
+</script>

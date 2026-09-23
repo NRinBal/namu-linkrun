@@ -1,0 +1,266 @@
+// ==UserScript==
+// @name         나무 링크런 기록기
+// @namespace    https://claude.ai/linkrun
+// @version      1.1.0
+// @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
+// @match        https://namu.wiki/*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_setClipboard
+// @run-at       document-idle
+// @noframes
+// ==/UserScript==
+
+// 이 파일은 북마크 버전으로도 쓰여요. 게임 페이지가 GM_* 함수를 localStorage로 흉내 내는
+// 감싸개를 붙이고 __LINKRUN_BM 을 정의해서 북마크 코드로 만들어요.
+(function () {
+  'use strict';
+
+  const BM = typeof __LINKRUN_BM !== 'undefined';
+  const mark = document.documentElement.dataset.linkrun;
+  if (mark) {
+    if (BM && mark === 'bm' && window.__linkrunShow) window.__linkrunShow();
+    else if (BM) alert('링크런: Tampermonkey 스크립트가 이미 기록 중이에요. 북마크는 누르지 않아도 돼요.');
+    return;
+  }
+  if (BM && !/linkrun=/.test(location.hash) && !GM_getValue('linkrun.run', null)) {
+    alert('링크런: 진행 중인 라운드가 없어요. 게임 페이지에서 ‘참가하고 시작 문서 열기’로 연 나무위키 탭에서 눌러 주세요.');
+    return;
+  }
+  document.documentElement.dataset.linkrun = BM ? 'bm' : 'tm';
+
+  const RUN = 'linkrun.run';       // 진행 중인 라운드 기록
+  const PEND = 'linkrun.pending';  // 방금 누른 링크 (다음 문서 도착 때 확인)
+
+  /* ---------- 공통 도구 ---------- */
+  const norm = s => (s || '').normalize('NFC').replace(/_/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  function b64e(str) {
+    const b = enc.encode(str); let s = '';
+    for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64d(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    const s = atob(str), b = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+    return dec.decode(b);
+  }
+  function fnv(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return (h >>> 0).toString(16).padStart(8, '0');
+  }
+  function fmt(ms) {
+    if (ms == null || ms < 0) ms = 0;
+    const m = Math.floor(ms / 60000), s = Math.floor(ms / 1000) % 60, d = Math.floor(ms / 100) % 10;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + '.' + d;
+  }
+  function titleOf(href) {
+    try {
+      const u = new URL(href, location.href);
+      if (u.hostname !== 'namu.wiki') return null;
+      const m = u.pathname.match(/^\/w\/(.+)$/);
+      if (!m) return null;
+      return decodeURIComponent(m[1]).replace(/_/g, ' ').trim();
+    } catch (e) { return null; }
+  }
+  const load = () => GM_getValue(RUN, null);
+  const save = run => GM_setValue(RUN, run);
+
+  function makeCode(run) {
+    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, path: run.path }));
+    return 'LR1.' + body + '.' + fnv(body);
+  }
+
+  /* ---------- 1. 링크런 페이지에서 넘어온 시작 정보 ---------- */
+  const hm = location.hash.match(/linkrun=([A-Za-z0-9_-]+)/);
+  if (hm) {
+    try {
+      const d = JSON.parse(b64d(hm[1]));
+      const cur = load();
+      const same = cur && cur.r === d.r && cur.p === d.p && cur.a === d.a;
+      if (!same) save({ r: d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false });
+    } catch (e) { console.warn('[링크런] 시작 정보를 읽지 못했어요', e); }
+    history.replaceState(history.state, '', location.pathname + location.search);
+  }
+
+  /* ---------- 2. 어떤 링크를 눌렀는지 ---------- */
+  // 본문 = 문서 제목(h1)과 분류 링크를 함께 감싸는 가장 작은 영역.
+  // 오른쪽 '최근 변경', 검색창, 각주 팝업 같은 곳은 여기 밖이에요.
+  function contentRoot() {
+    const h1 = document.querySelector('h1');
+    if (!h1) return null;
+    const cat = document.querySelector('a[href^="/w/%EB%B6%84%EB%A5%98:"], a[href^="/w/분류:"]');
+    if (cat) { let e = h1; while (e && !e.contains(cat)) e = e.parentElement; if (e) return e; }
+    let e = h1;
+    for (let i = 0; i < 3 && e.parentElement; i++) e = e.parentElement;
+    return e;
+  }
+  function onClick(ev) {
+    const a = ev.target && ev.target.closest ? ev.target.closest('a[href]') : null;
+    if (!a) return;
+    const t = titleOf(a.href);
+    if (!t) return;
+    const root = contentRoot();
+    GM_setValue(PEND, { t, at: Date.now(), how: root && root.contains(a) ? 'l' : 'o' });
+  }
+  document.addEventListener('click', onClick, true);
+  document.addEventListener('auxclick', onClick, true);
+
+  let lastPop = 0;
+  window.addEventListener('popstate', () => { lastPop = Date.now(); });
+  function navType() { try { return performance.getEntriesByType('navigation')[0].type; } catch (e) { return ''; } }
+
+  /* ---------- 3. 문서 도착 기록 ---------- */
+  // how: l = 본문 링크, o = 본문 밖 링크, b = 뒤로/앞으로, j = 검색·주소창 등 링크 없이 이동
+  let lastUrl = null, first = true;
+  function check() {
+    if (location.href === lastUrl) return;
+    lastUrl = location.href;
+    const isFirst = first; first = false;
+    const run = load();
+    if (!run || run.f != null || run.g) { render(true); return; }
+    const t = titleOf(location.href);
+    if (!t) { render(true); return; }
+    const last = run.path.length ? run.path[run.path.length - 1][0] : run.s;
+    if (norm(t) === norm(last)) { GM_setValue(PEND, null); render(true); return; }
+
+    // 페이지를 새로 불러온 직후라면(북마크를 나중에 눌렀을 수 있음) 도착 시각 = 페이지를 불러온 시각
+    let now = Date.now();
+    if (isFirst) {
+      try {
+        const nav = performance.getEntriesByType('navigation')[0];
+        if (nav && nav.name.split('#')[0] === location.href.split('#')[0]) now = Math.round(performance.timeOrigin);
+      } catch (e) { /* 그대로 현재 시각 사용 */ }
+    }
+    const from = new URL(location.href).searchParams.get('from');
+    const pend = GM_getValue(PEND, null);
+    let how = 'j';
+    if (pend && now - pend.at < 10000 && (norm(pend.t) === norm(t) || (from && norm(pend.t) === norm(from)))) how = pend.how;
+    else if (now - lastPop < 2000 || (isFirst && navType() === 'back_forward')) how = 'b';
+    GM_setValue(PEND, null);
+
+    const ms = now - run.a;
+    run.path.push([t, ms, how]);
+    if (norm(t) === norm(run.t) || (from && norm(from) === norm(run.t))) run.f = ms;
+    save(run);
+    render(true);
+    if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
+  }
+  setInterval(check, 250);
+
+  /* ---------- 4. 화면 구석 기록판 ---------- */
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483647;';
+  const sh = host.attachShadow({ mode: 'open' });
+  sh.innerHTML = `
+<style>
+  .box{width:270px;background:#13201B;color:#E4EEE9;border:1px solid #2C4238;border-radius:12px;padding:12px 14px;
+       font:13px/1.5 "Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .brand{font-weight:700;color:#3FC195}
+  .timer{font:700 24px/1.1 ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums;margin:6px 0 2px}
+  .goal{color:#8FA59B}.goal b{color:#E4EEE9}
+  .stat{color:#8FA59B;font-size:12px}
+  ol{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:120px;overflow:auto}
+  li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tag{font-size:10.5px;border-radius:4px;padding:0 4px;margin-left:4px;background:#2C4238;color:#E4EEE9}
+  .tag.bad{background:#7A2A24}
+  .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  button{font:inherit;font-size:12px;border:1px solid #2C4238;background:#1C2A24;color:#E4EEE9;border-radius:6px;padding:4px 9px;cursor:pointer}
+  button.primary{background:#3FC195;color:#06140F;border-color:#3FC195;font-weight:700}
+  button.armed{background:#C8453B;border-color:#C8453B;color:#fff}
+  .msg{margin-top:8px;font-size:12px;color:#3FC195}
+  .done{color:#3FC195;font-weight:700}
+  .mini{cursor:pointer;background:#13201B;color:#3FC195;border:1px solid #2C4238;border-radius:999px;padding:6px 12px;font:700 13px system-ui,sans-serif}
+  textarea{width:100%;height:56px;margin-top:6px;font:11px ui-monospace,Consolas,monospace;background:#0B1310;color:#E4EEE9;border:1px solid #2C4238;border-radius:6px;resize:none}
+  [hidden]{display:none!important}
+</style>
+<button class="mini" id="mini" hidden></button>
+<div class="box" id="box">
+  <div class="row"><span class="brand" id="round">링크런</span><button id="fold" title="접기">접기</button></div>
+  <div class="timer" id="timer">00:00.0</div>
+  <div class="goal">목표 <b id="target"></b></div>
+  <div class="stat" id="stat"></div>
+  <ol id="path"></ol>
+  <div class="btns">
+    <button class="primary" id="copy" hidden>결과 코드 복사</button>
+    <button id="giveup">포기</button>
+    <button id="clear" hidden>기록 지우기</button>
+  </div>
+  <div class="msg" id="msg" hidden></div>
+  <textarea id="code" readonly hidden></textarea>
+</div>`;
+  const $ = id => sh.getElementById(id);
+  let folded = false, armed = null, armTimer = null, msgTimer = null, lastLen = -1, lastState = '';
+
+  function flash(text) {
+    const m = $('msg'); m.textContent = text; m.hidden = false;
+    clearTimeout(msgTimer); msgTimer = setTimeout(() => { m.hidden = true; }, 5000);
+  }
+  function copyCode(okText) {
+    const run = load(); if (!run) return;
+    const code = makeCode(run);
+    const fail = () => { $('code').value = code; $('code').hidden = false; $('code').select(); flash('자동 복사가 막혔어요. 아래 칸의 코드를 Ctrl+C로 복사하세요.'); };
+    try { Promise.resolve(GM_setClipboard(code, 'text')).then(() => flash(okText), fail); } catch (e) { fail(); }
+  }
+  function arm(name, fn) {
+    if (armed === name) { armed = null; clearTimeout(armTimer); fn(); render(true); return; }
+    armed = name; render(true);
+    clearTimeout(armTimer); armTimer = setTimeout(() => { armed = null; render(true); }, 3000);
+  }
+  $('fold').onclick = () => { folded = true; render(true); };
+  $('mini').onclick = () => { folded = false; render(true); };
+  $('copy').onclick = () => copyCode('결과 코드를 복사했어요. 링크런 페이지의 입력칸에 붙여넣으세요.');
+  $('giveup').onclick = () => arm('giveup', () => {
+    const run = load(); if (!run || run.f != null) return;
+    run.g = true; save(run); copyCode('포기했어요. 결과 코드를 복사했어요.');
+  });
+  window.__linkrunShow = () => { folded = false; render(true); flash('기록 중이에요. 다시 누르지 않아도 돼요.'); };
+  $('clear').onclick = () => arm('clear', () => { GM_setValue(RUN, null); });
+
+  const TAG = { o: ['본문 밖', true], b: ['뒤로', false], j: ['링크 없이 이동', true] };
+  function render(full) {
+    const run = load();
+    if (!run) { host.remove(); return; }
+    if (!host.isConnected) document.body.appendChild(host);
+    $('box').hidden = folded; $('mini').hidden = !folded;
+
+    const now = Date.now();
+    const state = run.f != null ? 'done' : run.g ? 'out' : 'run';
+    const timerText = state === 'done' ? fmt(run.f) : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
+    $('timer').textContent = timerText;
+    $('mini').textContent = '링크런 ' + timerText;
+    if (!full && run.path.length === lastLen && state === lastState) return;
+    lastLen = run.path.length; lastState = state;
+
+    $('round').textContent = '링크런 ' + run.r + 'R';
+    $('target').textContent = run.t;
+    const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j').length;
+    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : '');
+    $('stat').className = state === 'done' ? 'stat done' : 'stat';
+
+    const ol = $('path'); ol.replaceChildren();
+    const items = [[run.s, 0, 's'], ...run.path];
+    for (const [t, ms, how] of items.slice(-6)) {
+      const li = document.createElement('li');
+      li.textContent = (how === 's' ? '출발 ' : fmt(ms) + ' ') + t;
+      if (TAG[how]) { const s = document.createElement('span'); s.className = 'tag' + (TAG[how][1] ? ' bad' : ''); s.textContent = TAG[how][0]; li.appendChild(s); }
+      ol.appendChild(li);
+    }
+    ol.scrollTop = ol.scrollHeight;
+
+    $('copy').hidden = state === 'run';
+    $('giveup').hidden = state !== 'run';
+    $('clear').hidden = state === 'run';
+    $('giveup').textContent = armed === 'giveup' ? '한 번 더 누르면 포기' : '포기';
+    $('giveup').className = armed === 'giveup' ? 'armed' : '';
+    $('clear').textContent = armed === 'clear' ? '한 번 더 누르면 지워요' : '기록 지우기';
+    $('clear').className = armed === 'clear' ? 'armed' : '';
+  }
+  setInterval(() => render(false), 200);
+  check();
+  render(true);
+})();

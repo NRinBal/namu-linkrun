@@ -1,0 +1,18 @@
+rules_version = '2';
+// 나무 링크런 보안 규칙. Firebase 콘솔 → Firestore Database → 규칙 탭에 통째로 붙여넣고 "게시".
+// 로그인이 없어서 링크를 아는 사람은 누구나 읽고 쓸 수 있어요. 대신 정해진 자리 밖은 막고,
+// 기록을 지우는 것과 너무 큰 문서는 막아요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /rooms/{room}/{col}/{id} {
+      allow read: if room.size() <= 30 && col in ['game', 'players', 'history'];
+      allow create, update: if room.size() <= 30
+        && col in ['game', 'players', 'history']
+        && request.resource.data.keys().size() <= 20
+        && (col != 'game' || id == 'state')
+        && (!('path' in request.resource.data) || request.resource.data.path.size() <= 500)
+        && (!('results' in request.resource.data) || request.resource.data.results.size() <= 50);
+      allow delete: if false;
+    }
+  }
+}
