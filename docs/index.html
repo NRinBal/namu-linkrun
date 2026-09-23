@@ -263,7 +263,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
 // ==UserScript==
 // @name         나무 링크런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.1.0
+// @version      1.2.0
 // @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
@@ -348,6 +348,43 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
     history.replaceState(history.state, '', location.pathname + location.search);
   }
 
+  /* ---------- 1-1. 넘겨주기(리다이렉트) 확인 ---------- */
+  // 목표가 '세종대왕'이면 실제 문서는 '세종(조선)'. 본문 링크가 '세종(조선)'을 바로 가리키면
+  // 주소에 ?from= 이 안 붙어서, 라운드 시작 때 숨은 창으로 목표 문서를 한 번 열어 실제 제목을 알아둬요.
+  function resolveTitle(title) {
+    return new Promise(res => {
+      const f = document.createElement('iframe');
+      f.style.cssText = 'position:fixed;width:1px;height:1px;left:-9999px;top:0;opacity:0;pointer-events:none;border:0';
+      f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+      f.src = '/w/' + title.split('/').map(encodeURIComponent).join('/');
+      const started = Date.now();
+      const iv = setInterval(() => {
+        let out;
+        try {
+          const u = new URL(f.contentWindow.location.href);
+          if (f.contentDocument.querySelector('h1') && u.pathname.startsWith('/w/')) out = decodeURIComponent(u.pathname.slice(3)).replace(/_/g, ' ').trim();
+        } catch (e) { /* 아직 로딩 중 */ }
+        if (out || Date.now() - started > 15000) { clearInterval(iv); f.remove(); res(out || null); }
+      }, 200);
+      document.body.appendChild(f);
+    });
+  }
+  const isGoal = (run, t, from) => norm(t) === norm(run.t) || (run.tr && norm(t) === norm(run.tr)) || (!!from && norm(from) === norm(run.t));
+  function resolveTarget() {
+    const run = load();
+    if (!run || run.tr !== undefined || run.f != null || run.g) return;
+    resolveTitle(run.t).then(real => {
+      const cur = load();
+      if (!cur || cur.r !== run.r || cur.a !== run.a) return;
+      cur.tr = real && norm(real) !== norm(cur.t) ? real : null;
+      // 확인이 끝나기 전에 이미 실제 문서에 도착해 있었다면 그때 완주로 쳐요.
+      const hit = cur.f == null && !cur.g && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
+      if (hit) { cur.path = cur.path.slice(0, cur.path.indexOf(hit) + 1); cur.f = hit[1]; }
+      save(cur); render(true);
+      if (hit) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
+    });
+  }
+
   /* ---------- 2. 어떤 링크를 눌렀는지 ---------- */
   // 본문 = 문서 제목(h1)과 분류 링크를 함께 감싸는 가장 작은 영역.
   // 오른쪽 '최근 변경', 검색창, 각주 팝업 같은 곳은 여기 밖이에요.
@@ -386,8 +423,11 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
     if (!run || run.f != null || run.g) { render(true); return; }
     const t = titleOf(location.href);
     if (!t) { render(true); return; }
-    const last = run.path.length ? run.path[run.path.length - 1][0] : run.s;
-    if (norm(t) === norm(last)) { GM_setValue(PEND, null); render(true); return; }
+    const from0 = new URL(location.href).searchParams.get('from');
+    // 시작 문서가 넘겨주기라면(예: '한국' → '대한민국?from=한국') 실제 제목을 시작 문서로 기억해요.
+    if (!run.path.length && run.sr === undefined && from0 && norm(from0) === norm(run.s)) { run.sr = t; save(run); }
+    const last = run.path.length ? run.path[run.path.length - 1][0] : (run.sr || run.s);
+    if (norm(t) === norm(last) || (!run.path.length && norm(t) === norm(run.s))) { GM_setValue(PEND, null); render(true); return; }
 
     // 페이지를 새로 불러온 직후라면(북마크를 나중에 눌렀을 수 있음) 도착 시각 = 페이지를 불러온 시각
     let now = Date.now();
@@ -406,7 +446,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
 
     const ms = now - run.a;
     run.path.push([t, ms, how]);
-    if (norm(t) === norm(run.t) || (from && norm(from) === norm(run.t))) run.f = ms;
+    if (isGoal(run, t, from)) run.f = ms;
     save(run);
     render(true);
     if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
@@ -499,7 +539,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
     lastLen = run.path.length; lastState = state;
 
     $('round').textContent = '링크런 ' + run.r + 'R';
-    $('target').textContent = run.t;
+    $('target').textContent = run.t + (run.tr ? ' (= ' + run.tr + ')' : run.tr === undefined && state === 'run' ? ' · 넘겨주기 확인 중' : '');
     const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j').length;
     $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : '');
     $('stat').className = state === 'done' ? 'stat done' : 'stat';
@@ -525,6 +565,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
   setInterval(() => render(false), 200);
   check();
   render(true);
+  resolveTarget();
 })();
 </script>
 
