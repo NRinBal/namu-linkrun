@@ -108,6 +108,10 @@ a.doc-card .v{color:var(--link)}
 .checks{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0;font-size:14px}
 .checks label{display:flex;gap:6px;align-items:center;cursor:pointer}
 .setup-actions{display:flex;gap:8px;flex-wrap:wrap}
+.pool-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+.pool-row label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);font-weight:500}
+.pool-row select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:150px}
+.pool-count{font-size:12px;color:var(--muted);padding-bottom:10px}
 
 details.hist{border-top:1px solid var(--line);padding:10px 0}
 details.hist:first-child{border-top:0}
@@ -206,6 +210,11 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
     <div class="checks">
       <label for="rule-back"><input type="checkbox" id="rule-back" checked> 뒤로 가기 허용</label>
       <label for="rule-foot"><input type="checkbox" id="rule-foot"> 각주 속 링크 허용</label>
+    </div>
+    <div class="pool-row">
+      <label for="pool-start">랜덤 시작 분류<select id="pool-start"></select></label>
+      <label for="pool-target">랜덤 목표 분류<select id="pool-target"></select></label>
+      <span id="pool-count" class="pool-count"></span>
     </div>
     <div class="setup-actions">
       <button type="button" id="shuffle-btn">랜덤으로 채우기</button>
@@ -559,7 +568,7 @@ details.hist summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-i
 </script>
 
 <script>
-const TITLES = ["김치","떡볶이","라면","삼겹살","비빔밥","치킨","커피","초콜릿","소주","수박","바나나","고양이","개","펭귄","상어","고래","개미","꿀벌","공룡","티라노사우루스","블랙홀","태양","달","화성","은하수","원자","DNA","전기","인공지능","인터넷","컴퓨터","스마트폰","비트코인","한글","세종대왕","이순신","나폴레옹 보나파르트","알베르트 아인슈타인","아이작 뉴턴","레오나르도 다 빈치","모나리자","루트비히 판 베토벤","에펠탑","만리장성","독도","제주도","서울특별시","부산광역시","일본","브라질","이집트","남극","에베레스트 산","아마존 강","로마 제국","조선","고구려","축구","야구","올림픽","손흥민","페이커","아이유","방탄소년단","피카츄","포켓몬스터","슈퍼 마리오","마인크래프트","리그 오브 레전드","테트리스","해리 포터 시리즈","스타벅스","우유","해바라기","피아노"];
+const POOL = /*POOL*/{"음식": ["김치", "떡볶이", "라면", "삼겹살", "비빔밥", "치킨", "커피", "초콜릿", "소주", "수박", "바나나", "우유", "피자", "햄버거", "짜장면", "짬뽕", "불고기", "냉면", "김밥", "떡", "막걸리", "맥주", "포도주", "아이스크림", "케이크", "마카롱", "초밥", "라멘", "쌀", "두부", "된장", "고추장", "마라탕", "탕후루", "콜라", "배추", "사과", "감자", "고구마", "딸기"], "동물": ["고양이", "개", "펭귄", "상어", "고래", "개미", "꿀벌", "호랑이", "사자", "판다", "코끼리", "기린", "캥거루", "코알라", "문어", "오징어", "해파리", "거북", "뱀", "악어", "독수리", "비둘기", "까마귀", "앵무새", "햄스터", "토끼", "너구리", "늑대", "여우", "곰", "모기", "바퀴벌레", "나비", "공룡", "티라노사우루스", "돌고래", "닭", "소", "돼지", "말(동물)"], "과학·기술": ["블랙홀", "태양", "달", "화성", "은하수", "원자", "DNA", "전기", "인공지능", "인터넷", "컴퓨터", "스마트폰", "비트코인", "상대성 이론", "양자역학", "진화생물학", "빅뱅 우주론", "지구", "목성", "토성", "명왕성", "수소", "산소", "물", "빛", "중력", "반도체", "로봇", "로켓", "인공위성", "백신", "항생제", "원자력 발전소", "피타고라스 정리", "원주율", "백악기-고진기 대멸종", "화산", "지진", "태풍", "무지개"], "인물": ["세종(조선)", "이순신", "나폴레옹 1세", "알베르트 아인슈타인", "아이작 뉴턴", "레오나르도 다빈치", "루트비히 판 베토벤", "볼프강 아마데우스 모차르트", "윌리엄 셰익스피어", "찰스 다윈", "마리 퀴리", "스티브 잡스", "일론 머스크", "빌 게이츠", "에이브러햄 링컨", "칭기즈 칸", "알렉산드로스 3세", "율리우스 카이사르", "클레오파트라 7세", "공자", "석가모니", "예수", "소크라테스", "광개토대왕", "장영실", "유관순", "안중근", "김구", "신사임당", "정약용", "빈센트 반 고흐", "파블로 피카소", "월트 디즈니", "마이클 잭슨", "아돌프 히틀러", "갈릴레오 갈릴레이", "토머스 에디슨", "니콜라 테슬라", "헬렌 켈러", "모한다스 카람찬드 간디"], "장소": ["에펠탑", "만리장성", "독도", "제주도", "서울특별시", "부산광역시", "일본", "브라질", "이집트", "남극", "에베레스트", "아마존강", "미국", "중국", "러시아", "프랑스", "영국", "독일", "이탈리아", "호주", "캐나다", "인도", "뉴욕시", "파리(프랑스)", "도쿄도", "런던", "사하라 사막", "태평양", "한라산", "경복궁", "남산서울타워", "기자의 대피라미드", "콜로세움", "자유의 여신상", "타지마할", "롯데월드타워", "에버랜드", "한강", "울릉군", "우주"], "역사": ["로마 제국", "조선", "고구려", "백제", "신라", "고려", "제2차 세계 대전", "제1차 세계 대전", "프랑스 혁명", "산업 혁명", "임진왜란", "6.25 전쟁", "3.1 운동", "르네상스", "냉전", "대항해시대", "몽골 제국", "오스만 제국", "시황제", "삼국지", "훈민정음", "팔만대장경", "거북선", "동로마 제국", "십자군 전쟁", "아폴로 11호", "RMS 타이타닉", "베를린 장벽", "고조선", "발해", "대한제국", "8.15 광복", "석굴암", "첨성대", "직지심체요절", "만주", "실크로드", "피라미드", "페스트", "공룡시대"], "게임·애니·영화": ["피카츄", "포켓몬스터", "슈퍼 마리오 시리즈", "마인크래프트", "리그 오브 레전드", "테트리스", "스타크래프트", "오버워치", "PUBG: BATTLEGROUNDS", "메이플스토리", "Roblox", "젤다의 전설", "짱구는 못말려", "도라에몽", "원피스(만화)", "나루토", "드래곤볼", "귀멸의 칼날", "진격의 거인", "명탐정 코난", "뽀롱뽀롱 뽀로로", "아기공룡 둘리", "네모바지 스폰지밥", "심슨 가족", "미키 마우스", "겨울왕국", "토이 스토리", "해리 포터 시리즈", "반지의 제왕", "스타워즈", "마블 시네마틱 유니버스", "아이언맨", "스파이더맨", "배트맨", "오징어 게임", "기생충(영화)", "어벤져스: 엔드게임", "타이타닉(영화)", "쿠키런", "크레이지레이싱 카트라이더"], "스포츠": ["축구", "야구", "농구", "배구", "테니스", "골프", "탁구", "배드민턴", "태권도", "씨름", "올림픽", "FIFA 월드컵", "손흥민", "박지성", "김연아", "류현진", "리오넬 메시", "크리스티아누 호날두", "마이클 조던", "이상혁", "마라톤", "수영", "스키", "체스", "바둑", "e스포츠", "프리미어 리그", "KBO 리그", "오타니 쇼헤이", "우사인 볼트", "양궁", "펜싱", "유도", "권투", "레슬링", "피겨 스케이팅", "컬링", "당구", "볼링", "스노보드"], "문화·생활": ["한글", "아이유", "방탄소년단", "BLACKPINK", "NewJeans", "싸이", "강남스타일", "스타벅스", "해바라기", "피아노", "기타", "바이올린", "성탄절", "설날", "추석", "할로윈", "유튜브", "넷플릭스", "카카오톡", "네이버", "구글", "Apple", "삼성전자", "나무위키", "위키백과", "무한도전", "런닝맨", "모나리자", "레고", "3×3×3 큐브", "지하철", "비행기", "자동차", "자전거", "우산", "안경", "연필", "책", "태극기", "애국가"]}/*POOL*/; // pool.json에서 build.py가 채워요
 const COUNTDOWN_MS = 5000;
 
 const $ = s => document.querySelector(s);
@@ -625,10 +634,14 @@ function fmt(ms){
 const startLink = g => namuUrl(g.start) + "#linkrun=" + b64e(JSON.stringify({ r: g.round, s: g.start, t: g.target, a: g.startAt, p: me.id }));
 const HOW = { b: "뒤로", o: "본문 밖", j: "링크 없이 이동" };
 const isWarn = (how, rules) => how === "o" || how === "j" || (how === "b" && !(rules && rules.back));
+const ALL = "전체";
+const poolOf = cat => cat && POOL[cat] ? POOL[cat] : Object.values(POOL).flat();
 function pick2(){
-  const a = Math.floor(Math.random()*TITLES.length);
-  let b; do { b = Math.floor(Math.random()*TITLES.length); } while (b === a);
-  return [TITLES[a], TITLES[b]];
+  const sp = poolOf($("#pool-start").value), tp = poolOf($("#pool-target").value);
+  const a = sp[Math.floor(Math.random()*sp.length)];
+  let b, tries = 0;
+  do { b = tp[Math.floor(Math.random()*tp.length)]; } while (norm(b) === norm(a) && ++tries < 50);
+  return [a, b];
 }
 let toastTimer;
 function toast(msg){
@@ -964,6 +977,15 @@ $("#copy-script").addEventListener("click", () => {
   }, "스크립트를 복사했어요. Tampermonkey 새 스크립트에 붙여넣으세요.");
 });
 $("#giveup-btn").addEventListener("click", giveUp);
+for (const id of ["#pool-start", "#pool-target"]) {
+  const sel = $(id);
+  sel.append(h("option", { value: "" }, ALL + " (" + poolOf("").length + ")"));
+  for (const [cat, list] of Object.entries(POOL)) sel.append(h("option", { value: cat }, cat + " (" + list.length + ")"));
+  const saved = lsGet("linkrun." + id.slice(1));
+  if (saved && POOL[saved]) sel.value = saved;
+  sel.addEventListener("change", () => lsSet("linkrun." + id.slice(1), sel.value));
+}
+$("#pool-count").textContent = "문서 " + poolOf("").length + "개 · 분류 " + Object.keys(POOL).length + "개";
 $("#shuffle-btn").addEventListener("click", () => { const [a,b] = pick2(); $("#setup-start").value = a; $("#setup-target").value = b; });
 $("#start-btn").addEventListener("click", () => startRound($("#setup-start").value, $("#setup-target").value, false));
 $("#blind-btn").addEventListener("click", () => { const [a,b] = pick2(); startRound(a, b, true); });

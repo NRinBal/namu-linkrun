@@ -1,11 +1,12 @@
 """나무 링크런 빌드.
 
-1. linkrun.user.js 내용을 linkrun.html 안의 <script type="text/plain" id="userscript-src">에 넣어요.
-   (claude.ai 게시용 linkrun.html)
+1. linkrun.user.js 내용을 linkrun.html 안의 <script type="text/plain" id="userscript-src">에 넣고,
+   pool.json(랜덤 출제 문서 목록)을 const POOL 자리에 넣어요. (claude.ai 게시용 linkrun.html)
 2. 같은 내용으로 사이트용 docs/index.html을 만들어요. (GitHub Pages + Firebase)
 
 스크립트나 페이지를 고친 뒤 게시하기 전에 실행하세요:  python build.py
 """
+import json
 import re
 from pathlib import Path
 
@@ -24,6 +25,22 @@ if not pattern.search(html):
     raise SystemExit('linkrun.html에서 <script type="text/plain" id="userscript-src"> 자리를 찾지 못했어요.')
 
 html = pattern.sub(lambda m: m.group(1) + "\n" + src + m.group(2), html, count=1)
+
+# 랜덤 출제용 문서 목록: pool.json → const POOL = /*POOL*/{...}/*POOL*/;
+pool = json.loads((here / "pool.json").read_text(encoding="utf-8"))
+seen = {}
+for cat, titles in pool.items():
+    if not titles:
+        raise SystemExit(f"pool.json: '{cat}' 분류가 비어 있어요.")
+    for t in titles:
+        key = t.strip().lower()
+        if key in seen:
+            raise SystemExit(f"pool.json: '{t}'가 '{seen[key]}'와 '{cat}'에 두 번 들어 있어요.")
+        seen[key] = cat
+if "/*POOL*/" not in html:
+    raise SystemExit("linkrun.html에서 /*POOL*/ 자리를 찾지 못했어요.")
+pool_js = json.dumps(pool, ensure_ascii=False).replace("</", "<\\/")
+html = re.sub(r"/\*POOL\*/[\s\S]*?/\*POOL\*/", lambda m: "/*POOL*/" + pool_js + "/*POOL*/", html, count=1)
 html_path.write_text(html, encoding="utf-8")
 
 # 사이트용: claude.ai가 대신 붙여주던 문서 뼈대(charset, viewport, 기본 스타일)를 직접 붙여요.
@@ -66,4 +83,5 @@ if not config.exists():
     )
 
 version = re.search(r"@version\s+(\S+)", src)
-print("완료: linkrun.html, docs/index.html  (스크립트", version.group(1) if version else "?", ")")
+print("완료: linkrun.html, docs/index.html  (스크립트", version.group(1) if version else "?",
+      f"· 문서 {len(seen)}개 / 분류 {len(pool)}개)")
