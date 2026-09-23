@@ -73,7 +73,7 @@ input[type="checkbox"]{width:18px;height:18px;accent-color:var(--link);margin:0}
 .logo{font-size:clamp(28px,5vw,40px);font-weight:900;letter-spacing:-.04em;line-height:1}
 .logo em{color:var(--link);font-style:normal}
 .tagline{color:var(--muted);font-size:14px;font-weight:700}
-.me{display:flex;align-items:center;gap:8px}
+.me{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .me label{font-size:13px;color:var(--muted);white-space:nowrap;font-weight:700}
 .me input{width:150px}
 
@@ -257,6 +257,32 @@ details.hist[open] .hist-top .more{color:var(--muted)}
 .standings .who-cell{font-weight:900}
 @media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.charts{grid-template-columns:1fr}}
 
+
+/* 내 기록 창 */
+.my-dialog{width:min(920px,calc(100% - 32px));max-height:calc(100% - 48px);padding:0;border:2.5px solid var(--edge);border-radius:20px;background:var(--surface);color:var(--ink);box-shadow:7px 7px 0 var(--shadow)}
+.my-dialog::backdrop{background:rgba(8,17,12,.55)}
+.my-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:18px 22px 14px;background:var(--surface);border-bottom:2px solid var(--hair)}
+.my-head h2{margin:0;margin-right:auto}
+#my-body{padding:18px 22px 24px;display:flex;flex-direction:column;gap:20px}
+#my-body .tiles{grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
+.seg{display:inline-flex;border:2px solid var(--edge);border-radius:10px;overflow:hidden;box-shadow:2px 2px 0 var(--shadow)}
+.seg button{border:0;border-radius:0;box-shadow:none;padding:6px 12px;font-size:13px;background:var(--surface);color:var(--muted)}
+.seg button+button{border-left:2px solid var(--edge)}
+.seg button.on{background:var(--link);color:var(--link-ink)}
+.seg button:hover:not(:disabled),.seg button:active:not(:disabled){transform:none;box-shadow:none}
+.plot .bar{fill:var(--link)}
+.plot .bar.win{fill:var(--gold)}
+.plot .rank-label{fill:var(--ink);font-size:11px;font-weight:900}
+.plot .miss{fill:var(--muted);font-size:16px;font-weight:900}
+.pb h3{font-size:14px;margin:0 0 8px}
+.pb ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.pb b{font-variant-numeric:tabular-nums}
+.bad-text{color:var(--bad);font-weight:800}
+.muted-text{color:var(--muted);font-weight:700}
+.my-table td.path-cell{white-space:normal;min-width:220px}
+.my-table td.who-cell{white-space:nowrap}
+@media (max-width:760px){#my-body .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.my-head,#my-body{padding-inline:16px}}
+
 @media (max-width:760px){
   .grid,.setup-grid,.ban-more{grid-template-columns:1fr}
   .route{grid-template-columns:1fr;align-items:start}
@@ -276,6 +302,7 @@ details.hist[open] .hist-top .more{color:var(--muted)}
       <label for="name-input">닉네임</label>
       <input id="name-input" maxlength="16" placeholder="닉네임 입력" autocomplete="off">
       <button type="submit" id="name-save">저장</button>
+      <button type="button" id="my-btn" class="primary">내 기록</button>
     </form>
   </header>
 
@@ -394,6 +421,17 @@ details.hist[open] .hist-top .more{color:var(--muted)}
     <div id="stats"></div>
   </section>
 </div>
+<dialog id="my-dialog" class="my-dialog" aria-labelledby="my-title">
+  <div class="my-head">
+    <h2 id="my-title">내 기록</h2>
+    <div class="seg" role="group" aria-label="기간">
+      <button type="button" id="my-scope-season" class="on">초기화 이후</button>
+      <button type="button" id="my-scope-all">이 방 전체</button>
+    </div>
+    <button type="button" id="my-close" class="small" aria-label="닫기">닫기</button>
+  </div>
+  <div id="my-body"></div>
+</dialog>
 <div id="toast" class="toast" hidden></div>
 <script type="text/plain" id="userscript-src">
 // ==UserScript==
@@ -1354,6 +1392,123 @@ function renderStats(list){
       td(p.avgClicks != null ? p.avgClicks.toFixed(1) : "—"), td(p.warns), td(p.dq)))))));
 }
 
+/* ---------- 내 기록 ---------- */
+let myScope = "season";
+const isMe = x => x.id ? x.id === me.id : (!!me.name && x.name === me.name);   // 옛 기록(id 없음)은 닉네임으로
+function myRounds(){
+  const list = (myScope === "all" ? history : seasonHistory()).slice().sort((a, b) => a.round - b.round);
+  const out = [];
+  for (const r of list) {
+    const res = r.results || [];
+    const mine = res.find(isMe);
+    if (!mine) continue;
+    const finishers = res.filter(x => resultState(x) === "done").sort((a, b) => a.finishedMs - b.finishedMs || a.clicks - b.clicks);
+    const st = resultState(mine);
+    out.push({ r, x: mine, st, rank: st === "done" ? finishers.indexOf(mine) + 1 : null, of: res.length });
+  }
+  return out;
+}
+let myKey = "";
+function renderMyStats(force){
+  const dlg = $("#my-dialog");
+  if (!dlg.open) return;
+  const key = [myScope, me.id, me.name, SINCE(), history.map(r => r.round + ":" + (r.endedAt || 0)).join(",")].join("|");
+  if (!force && key === myKey) return;     // 기록이 바뀔 때만 다시 그려요
+  myKey = key;
+  $("#my-scope-season").classList.toggle("on", myScope === "season");
+  $("#my-scope-all").classList.toggle("on", myScope === "all");
+  $("#my-title").textContent = (me.name || "나") + "의 기록";
+  const body = $("#my-body"); body.replaceChildren();
+  const rows = myRounds();
+  if (!rows.length) {
+    body.append(h("p", { class: "empty" }, me.name ? "아직 " + (myScope === "all" ? "이 방에서" : "초기화 이후") + " 참가한 라운드가 없어요." : "닉네임을 저장하고 라운드에 참가하면 기록이 쌓여요."));
+    return;
+  }
+  const done = rows.filter(o => o.st === "done");
+  const wins = done.filter(o => o.rank === 1).length;
+  const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+  const best = done.slice().sort((a, b) => a.x.finishedMs - b.x.finishedMs);
+  const fewest = done.slice().sort((a, b) => a.x.clicks - b.x.clicks || a.x.finishedMs - b.x.finishedMs)[0];
+  const pair = o => o.r.start + " → " + o.r.target;
+  const tile = (k, v, sub) => h("div", { class: "tile" }, h("span", { class: "k" }, k), h("span", { class: "v" }, v), h("span", { class: "s" }, sub || ""));
+  body.append(h("div", { class: "tiles" },
+    tile("참가", rows.length + "판", "우승 " + wins + "번"),
+    tile("완주율", Math.round(done.length / rows.length * 100) + "%", done.length + "판 완주"),
+    tile("최고 기록", best[0] ? fmt(best[0].x.finishedMs) : "—", best[0] ? pair(best[0]) : "완주 기록 없음"),
+    tile("평균", done.length ? fmt(avg(done.map(o => o.x.finishedMs))) : "—", done.length ? "평균 " + avg(done.map(o => o.x.clicks)).toFixed(1) + "클릭" : ""),
+    tile("최소 클릭", fewest ? fewest.x.clicks + "클릭" : "—", fewest ? pair(fewest) : ""),
+    tile("경고 · 실격", rows.reduce((s, o) => s + (o.x.warns || 0), 0) + " · " + rows.filter(o => o.st === "dq").length, "포기 " + rows.filter(o => o.st === "out").length + "판")));
+
+  // 라운드별 내 기록: 완주 = 시간 막대(위에 순위), 못 한 판 = ×
+  const fig = h("figure", { class: "chart" }, h("figcaption", {}, "라운드별 내 기록", h("span", { class: "hint-inline" }, " 막대 = 완주 시간 · 위 숫자 = 순위 · × = 완주 못 함")));
+  const W = 640, H = 220, M = { l: 48, r: 12, t: 22, b: 30 };
+  const maxMs = Math.max(60000, ...done.map(o => o.x.finishedMs));
+  const step = niceStep(maxMs, 4), yMax = Math.ceil(maxMs / step) * step;
+  const n = rows.length, slot = (W - M.l - M.r) / n, bw = Math.max(4, Math.min(36, slot - 6));
+  const cx = i => M.l + slot * i + slot / 2;
+  const y = ms => M.t + (1 - ms / yMax) * (H - M.t - M.b);
+  const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, class: "plot", role: "img", "aria-label": "라운드별 내 기록 막대그래프" });
+  for (let v = 0; v <= yMax + 1; v += step) {
+    svg.append(svgEl("line", { x1: M.l, x2: W - M.r, y1: y(v), y2: y(v), class: v === 0 ? "axis" : "grid" }));
+    svg.append(svgEl("text", { x: M.l - 8, y: y(v) + 4, class: "tick", "text-anchor": "end" }, fmtShort(v)));
+  }
+  const every = Math.ceil(n / 14);
+  const tip = h("div", { class: "tip", hidden: true });
+  rows.forEach((o, i) => {
+    if (i % every === 0 || i === n - 1) svg.append(svgEl("text", { x: cx(i), y: H - 8, class: "tick", "text-anchor": "middle" }, (myScope === "all" ? o.r.round : dispRound(o.r.round)) + "R"));
+    let hitY = y(0) - 20, hitH = 20;
+    if (o.st === "done") {
+      const top = y(o.x.finishedMs), bh = Math.max(2, y(0) - top);
+      svg.append(svgEl("path", { class: "bar" + (o.rank === 1 ? " win" : ""), d: "M" + (cx(i) - bw / 2) + "," + y(0) + "V" + (top + 4) + "q0,-4 4,-4H" + (cx(i) + bw / 2 - 4) + "q4,0 4,4V" + y(0) + "Z" }));
+      svg.append(svgEl("text", { x: cx(i), y: top - 6, class: "rank-label", "text-anchor": "middle" }, o.rank + "등"));
+      hitY = top - 18; hitH = bh + 18;
+    } else {
+      svg.append(svgEl("text", { x: cx(i), y: y(0) - 6, class: "miss", "text-anchor": "middle" }, "×"));
+    }
+    const hit = svgEl("rect", { x: cx(i) - slot / 2, y: hitY, width: slot, height: hitH, class: "hit", tabindex: "0" });
+    const show = () => {
+      tip.replaceChildren(h("b", {}, (myScope === "all" ? o.r.round : dispRound(o.r.round)) + "R · " + pair(o)),
+        h("span", { class: "tv" }, o.st === "done" ? fmt(o.x.finishedMs) + " · " + o.x.clicks + "클릭" : RESULT_LABEL[o.st]),
+        h("span", {}, o.st === "done" ? o.of + "명 중 " + o.rank + "등" : o.of + "명 참가"));
+      tip.style.setProperty("--dot", "var(--link)"); tip.hidden = false;
+      const box = svg.getBoundingClientRect(), sx = box.width / W;
+      tip.style.left = Math.min(box.width - 170, Math.max(0, cx(i) * sx - 80)) + "px";
+      tip.style.top = Math.max(0, hitY * sx - 64) + "px";
+    };
+    hit.addEventListener("pointerenter", show); hit.addEventListener("focus", show);
+    hit.addEventListener("pointerleave", () => { tip.hidden = true; }); hit.addEventListener("blur", () => { tip.hidden = true; });
+    svg.append(hit);
+  });
+  fig.append(h("div", { class: "plot-wrap" }, svg, tip));
+  body.append(fig);
+
+  // 최고 기록 3개
+  if (best.length) body.append(h("div", { class: "pb" }, h("h3", {}, "최고 기록"),
+    h("ol", {}, best.slice(0, 3).map(o => h("li", {}, h("b", {}, fmt(o.x.finishedMs)), " " + o.x.clicks + "클릭 · " + pair(o) + " · " + (myScope === "all" ? o.r.round : dispRound(o.r.round)) + "R")))));
+
+  // 판별 목록 (최근 판이 위)
+  const tbody = h("tbody", {}, rows.slice().reverse().map(o => h("tr", {},
+    h("td", { class: "num rk-cell" }, (myScope === "all" ? o.r.round : dispRound(o.r.round)) + "R"),
+    h("td", { class: "who-cell" }, pair(o)),
+    h("td", { class: "num" }, o.st === "done" ? o.rank + "/" + o.of + "등" : h("span", { class: o.st === "dq" ? "bad-text" : "muted-text" }, RESULT_LABEL[o.st])),
+    h("td", { class: "num" }, o.st === "done" ? fmt(o.x.finishedMs) : "—"),
+    h("td", { class: "num" }, o.x.clicks + "클릭" + (o.x.warns ? " · 경고 " + o.x.warns : "")),
+    h("td", { class: "path-cell" }, h("ol", { class: "path" }, pathList(o.x.path || [], { start: o.r.start, goalIdx: o.st === "done" ? (o.x.path || []).length - 1 : -1, rules: o.r.rules }))))));
+  body.append(h("div", { class: "hist-scroll" }, h("table", { class: "standings my-table" },
+    h("thead", {}, h("tr", {}, ["라운드", "시작 → 목표", "순위", "시간", "클릭", "경로"].map((t, i) => h("th", { class: i >= 2 && i <= 4 ? "num" : null }, t)))), tbody)));
+  if (myScope === "all" && SINCE() > 0) body.append(h("p", { class: "hint-inline" }, "‘이 방 전체’는 방 기록 초기화 전 판도 포함해요. 라운드 번호는 초기화와 상관없이 처음부터 센 번호예요."));
+}
+function openMyStats(){
+  const dlg = $("#my-dialog");
+  if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", "");
+  renderMyStats(true);
+}
+$("#my-btn").addEventListener("click", openMyStats);
+$("#my-close").addEventListener("click", () => $("#my-dialog").close ? $("#my-dialog").close() : $("#my-dialog").removeAttribute("open"));
+$("#my-dialog").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });   // 바깥 누르면 닫기
+$("#my-scope-season").addEventListener("click", () => { myScope = "season"; renderMyStats(); });
+$("#my-scope-all").addEventListener("click", () => { myScope = "all"; renderMyStats(); });
+
 let armedReset = false;
 function renderResetBtn(){
   const b = $("#reset-btn"), g = G();
@@ -1375,7 +1530,7 @@ function resetRoom(){
 function render(){
   $("#local-banner").hidden = !isLocal;
   if (document.activeElement !== $("#name-input")) $("#name-input").value = me.name;
-  renderStage(); renderRun(); renderBoard(); renderSetup(); renderHistory(); renderResetBtn();
+  renderStage(); renderRun(); renderBoard(); renderSetup(); renderHistory(); renderResetBtn(); renderMyStats();
 }
 $("#reset-btn").addEventListener("click", resetRoom);
 
