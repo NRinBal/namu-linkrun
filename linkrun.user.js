@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         나무 링크런 기록기
+// @name         나무위키링크스피드런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.3.2
-// @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
+// @version      1.4.0
+// @description  나무위키링크스피드런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -20,11 +20,11 @@
   const mark = document.documentElement.dataset.linkrun;
   if (mark) {
     if (BM && mark === 'bm' && window.__linkrunShow) window.__linkrunShow();
-    else if (BM) alert('링크런: Tampermonkey 스크립트가 이미 기록 중이에요. 북마크는 누르지 않아도 돼요.');
+    else if (BM) alert('나무위키링크스피드런: Tampermonkey 스크립트가 이미 기록 중이에요. 북마크는 누르지 않아도 돼요.');
     return;
   }
   if (BM && !/linkrun=/.test(location.hash) && !GM_getValue('linkrun.run', null)) {
-    alert('링크런: 진행 중인 라운드가 없어요. 게임 페이지에서 ‘참가하고 시작 문서 열기’로 연 나무위키 탭에서 눌러 주세요.');
+    alert('나무위키링크스피드런: 진행 중인 라운드가 없어요. 게임 페이지에서 ‘참가하고 시작 문서 열기’로 연 나무위키 탭에서 눌러 주세요.');
     return;
   }
   document.documentElement.dataset.linkrun = BM ? 'bm' : 'tm';
@@ -74,7 +74,7 @@
     return 'LR1.' + body + '.' + fnv(body);
   }
 
-  /* ---------- 1. 링크런 페이지에서 넘어온 시작 정보 ---------- */
+  /* ---------- 1. 게임 페이지에서 넘어온 시작 정보 ---------- */
   const hm = location.hash.match(/linkrun=([A-Za-z0-9_-]+)/);
   if (hm) {
     try {
@@ -82,9 +82,9 @@
       const cur = load();
       const same = cur && cur.r === d.r && cur.p === d.p && cur.a === d.a;
       // b: 금지 문서 제목들, bp: 금지 규칙 이름들(예: date), bm: 'warn'(경고만) | 'dq'(밟으면 실격)
-      if (!same) save({ r: d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false,
+      if (!same) save({ r: d.r, rn: d.rn || d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false,
         b: Array.isArray(d.b) ? d.b : [], bp: Array.isArray(d.bp) ? d.bp : [], bm: d.bm === 'dq' ? 'dq' : 'warn' });
-    } catch (e) { console.warn('[링크런] 시작 정보를 읽지 못했어요', e); }
+    } catch (e) { console.warn('[나무위키링크스피드런] 시작 정보를 읽지 못했어요', e); }
     history.replaceState(history.state, '', location.pathname + location.search);
   }
 
@@ -141,7 +141,7 @@
       const hit = cur.f == null && !cur.g && !cur.x && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
       if (hit) { cur.path = cur.path.slice(0, cur.path.indexOf(hit) + 1); cur.f = hit[1]; }
       save(cur); render(true);
-      if (hit) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
+      if (hit) copyCode('완주! 결과 코드를 복사했어요. 게임 페이지에 붙여넣으세요.');
     });
   }
 
@@ -213,7 +213,7 @@
     render(true);
     if (run.x) copyCode('금지 문서 ‘' + t + '’에 들어가서 실격이에요. 결과 코드를 복사했어요.');
     else if (banned) flash('금지 문서 ‘' + t + '’예요! 경고가 붙어요.');
-    if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
+    if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 게임 페이지에 붙여넣으세요.');
   }
   setInterval(check, 250);
 
@@ -232,7 +232,7 @@
         if (!banCache.has(href)) banCache.set(href, isBanned(run, titleOf(a.href) || ''));
         b = banCache.get(href);
       }
-      if (b && a.dataset.lrBan !== '1') { a.dataset.lrBan = '1'; a.title = '링크런 금지 문서'; }
+      if (b && a.dataset.lrBan !== '1') { a.dataset.lrBan = '1'; a.title = '나무위키링크스피드런 금지 문서'; }
       else if (!b && a.dataset.lrBan === '1') { delete a.dataset.lrBan; a.removeAttribute('title'); }
     }
     if (!on) banCache.clear();
@@ -257,7 +257,8 @@
        font:500 13px/1.5 "Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;box-shadow:5px 5px 0 #000;-webkit-font-smoothing:antialiased}
   .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .brand{font-weight:900;letter-spacing:-.02em}
-  .brand::first-letter{color:var(--link)}
+  .brand em{color:var(--link);font-style:normal}
+  .rnd{color:var(--muted);font-weight:800;margin-left:2px}
   .timer{font-weight:900;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em;margin:10px 0 6px}
   .goal{color:var(--muted);font-weight:700}
   .goal b{color:#0B1A13;background:var(--mark);padding:0 5px;border-radius:4px;font-weight:900}
@@ -280,7 +281,7 @@
 </style>
 <button class="mini" id="mini" hidden></button>
 <div class="box" id="box">
-  <div class="row"><span class="brand" id="round">링크런</span><button id="fold" title="접기">접기</button></div>
+  <div class="row"><span class="brand"><em>나무</em>위키<em>링크</em>스피드런 <span id="round" class="rnd"></span></span><button id="fold" title="접기">접기</button></div>
   <div class="timer" id="timer">00:00.0</div>
   <div class="goal">목표 <b id="target"></b></div>
   <div class="stat" id="stat"></div>
@@ -313,7 +314,7 @@
   }
   $('fold').onclick = () => { folded = true; render(true); };
   $('mini').onclick = () => { folded = false; render(true); };
-  $('copy').onclick = () => copyCode('결과 코드를 복사했어요. 링크런 페이지의 입력칸에 붙여넣으세요.');
+  $('copy').onclick = () => copyCode('결과 코드를 복사했어요. 게임 페이지의 입력칸에 붙여넣으세요.');
   $('giveup').onclick = () => arm('giveup', () => {
     const run = load(); if (!run || run.f != null || run.x) return;
     run.g = true; save(run); copyCode('포기했어요. 결과 코드를 복사했어요.');
@@ -332,11 +333,11 @@
     const state = run.f != null ? 'done' : run.x ? 'dq' : run.g ? 'out' : 'run';
     const timerText = state === 'done' ? fmt(run.f) : state === 'dq' ? '실격' : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
     $('timer').textContent = timerText;
-    $('mini').textContent = '링크런 ' + timerText;
+    $('mini').textContent = '나무위키링크스피드런 ' + timerText;
     if (!full && run.path.length === lastLen && state === lastState) return;
     lastLen = run.path.length; lastState = state;
 
-    $('round').textContent = '링크런 ' + run.r + 'R';
+    $('round').textContent = (run.rn || run.r) + 'R';
     $('target').textContent = run.t + (run.tr ? ' (= ' + run.tr + ')' : run.tr === undefined && state === 'run' ? ' · 넘겨주기 확인 중' : '');
     const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j' || x[2] === 'x').length;
     const nBan = ((run.b || []).length) + ((run.bp || []).includes('date') ? ' + 연도·날짜' : '');

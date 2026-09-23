@@ -7,6 +7,7 @@
   --link:#0A8A5B; --link-ink:#FFFFFF; --link-soft:#DAF1E5; --visited:#0E6C73;
   --mark:#C9F25A; --mark-ink:#0B1A13; --target-ink:#0B1A13; --target-mark:#C9F25A;
   --good:#0A8A5B; --bad:#E03E3E; --bad-soft:#FBE6E4; --gold:#D99A00;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
   --font:"Pretendard Variable","Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
   --code:ui-monospace,SFMono-Regular,Consolas,monospace;
   --r:14px;
@@ -19,6 +20,7 @@
     --link:#3FD196; --link-ink:#06140D; --link-soft:#133A29; --visited:#5CC9C4;
     --mark:#C9F25A; --mark-ink:#0B1A13; --target-ink:#C9F25A; --target-mark:rgba(201,242,90,.18);
     --good:#3FD196; --bad:#FF6B6B; --bad-soft:#3A1C1F; --gold:#FFC940;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
   }
 }
 :root[data-theme="dark"]{
@@ -28,6 +30,7 @@
   --link:#3FD196; --link-ink:#06140D; --link-soft:#133A29; --visited:#5CC9C4;
   --mark:#C9F25A; --mark-ink:#0B1A13; --target-ink:#C9F25A; --target-mark:rgba(201,242,90,.18);
   --good:#3FD196; --bad:#FF6B6B; --bad-soft:#3A1C1F; --gold:#FFC940;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
 }
 *{box-sizing:border-box}
 body{background:var(--ground);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;font-weight:500;-webkit-font-smoothing:antialiased}
@@ -182,6 +185,65 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
 .script-box pre{margin:10px 0 0;max-height:320px;overflow:auto;background:var(--sunk);border-radius:10px;padding:12px;font:12px/1.5 var(--code);white-space:pre}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:11px 18px;border-radius:12px;font-size:14px;font-weight:800;max-width:calc(100% - 32px);z-index:10;box-shadow:4px 4px 0 var(--link)}
 
+
+/* 지난 라운드 카드 */
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.panel-head h2{margin:0}
+button.small{padding:5px 11px;font-size:13px;box-shadow:2px 2px 0 var(--shadow)}
+details.hist summary{display:flex;flex-direction:column;gap:8px;align-items:stretch;list-style:none}
+details.hist summary::-webkit-details-marker{display:none}
+.hist-top{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.hist-top .more{margin-left:auto;font-size:12px;color:var(--link);font-weight:800}
+details.hist[open] .hist-top .more{color:var(--muted)}
+.rchips{display:flex;flex-wrap:wrap;gap:6px}
+.rchip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--hair);border-radius:999px;padding:3px 10px 3px 4px;font-size:13px;font-weight:700;background:var(--surface)}
+.rchip .rk{display:grid;place-items:center;min-width:22px;height:22px;border-radius:50%;background:var(--sunk);font-size:12px;font-weight:900}
+.rchip.win{border-color:var(--gold)}
+.rchip.win .rk{background:var(--gold);color:var(--mark-ink)}
+.rchip .tm{color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
+.rchip.dq,.rchip.out,.rchip.dnf{padding-left:10px;color:var(--muted)}
+.rchip.dq .tm{color:var(--bad)}
+.hist td.who-cell{font-weight:800;white-space:nowrap}
+
+/* 대전 기록 */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.tile{display:flex;flex-direction:column;gap:2px;border:2px solid var(--hair);border-radius:12px;padding:12px 14px;min-width:0}
+.tile .k{font-size:12px;color:var(--muted);font-weight:800}
+.tile .v{font-size:24px;font-weight:900;letter-spacing:-.02em;overflow-wrap:anywhere;line-height:1.25}
+.tile .s{font-size:12px;color:var(--muted);font-weight:600;overflow-wrap:anywhere}
+.charts{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:22px;margin-bottom:20px}
+.chart{margin:0;min-width:0}
+.chart figcaption{font-size:14px;font-weight:900;margin-bottom:8px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--muted)}
+.legend .lg{display:inline-flex;align-items:center;gap:6px}
+.legend i,.sw{display:inline-block;width:10px;height:10px;border-radius:3px}
+.sw{margin-right:7px;vertical-align:0}
+.plot-wrap{position:relative}
+.plot{width:100%;height:auto;display:block;overflow:visible}
+.plot .grid{stroke:var(--hair);stroke-width:1}
+.plot .axis{stroke:var(--muted);stroke-width:1}
+.plot .tick{fill:var(--muted);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.plot .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.plot .dot{stroke:var(--surface);stroke-width:2}
+.plot .dlabel{fill:var(--ink);font-size:12px;font-weight:800}
+.plot .hit{fill:transparent;cursor:pointer}
+.plot .hit:focus{outline:none;stroke:var(--ink);stroke-width:1.5;fill:transparent}
+.tip{position:absolute;pointer-events:none;width:160px;background:var(--ink);color:var(--ground);border-radius:10px;padding:8px 10px;font-size:12px;display:flex;flex-direction:column;gap:1px;box-shadow:3px 3px 0 var(--dot,var(--link));z-index:2}
+.tip b{font-weight:900}
+.tip .tv{font-weight:900;font-variant-numeric:tabular-nums;font-size:14px}
+.bar-row{display:grid;grid-template-columns:minmax(0,90px) 1fr auto;gap:10px;align-items:center;margin-bottom:8px;font-size:13px;font-weight:800}
+.bar-row .bn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-row .track{height:14px;background:var(--sunk);border-radius:4px;overflow:hidden}
+.bar-row .track i{display:block;height:100%;background:var(--link);border-radius:0 4px 4px 0}
+.bar-row .bv{font-variant-numeric:tabular-nums}
+.standings{width:100%;border-collapse:collapse;font-size:13px}
+.standings th{font-size:12px;color:var(--muted);font-weight:800;text-align:left;padding:6px 10px 8px 0;border-bottom:2px solid var(--hair);white-space:nowrap}
+.standings td{padding:9px 10px 9px 0;border-bottom:1.5px solid var(--hair);white-space:nowrap}
+.standings .num{text-align:right;font-variant-numeric:tabular-nums}
+.standings .rk-cell{color:var(--muted);font-weight:900;text-align:left}
+.standings .who-cell{font-weight:900}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.charts{grid-template-columns:1fr}}
+
 @media (max-width:760px){
   .grid,.setup-grid,.ban-more{grid-template-columns:1fr}
   .route{grid-template-columns:1fr;align-items:start}
@@ -283,8 +345,8 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
     <h3 class="opt">방법 1 · 북마크 버튼 <span class="tag">추천 · 설치 없음</span></h3>
     <ol class="steps">
       <li>아래 <b>북마크 코드 복사</b>를 눌러요.</li>
-      <li>브라우저에서 <b>Ctrl+D</b>로 아무 페이지나 북마크에 추가한 뒤, 그 북마크를 <b>수정</b>해요. 이름은 ‘링크런’, <b>URL 칸</b>에는 복사한 코드를 붙여넣고 저장해요. 북마크바(Ctrl+Shift+B)에 두면 편해요.</li>
-      <li>라운드 때 <b>참가하고 시작 문서 열기</b>로 나무위키가 열리면 그 탭에서 <b>링크런 북마크를 한 번</b> 눌러요. 오른쪽 아래에 기록판이 뜨면 준비 끝이에요.</li>
+      <li>브라우저에서 <b>Ctrl+D</b>로 아무 페이지나 북마크에 추가한 뒤, 그 북마크를 <b>수정</b>해요. 이름은 ‘링크스피드런’, <b>URL 칸</b>에는 복사한 코드를 붙여넣고 저장해요. 북마크바(Ctrl+Shift+B)에 두면 편해요.</li>
+      <li>라운드 때 <b>참가하고 시작 문서 열기</b>로 나무위키가 열리면 그 탭에서 <b>링크스피드런 북마크를 한 번</b> 눌러요. 오른쪽 아래에 기록판이 뜨면 준비 끝이에요.</li>
       <li>새로고침하거나 새 탭을 열었을 때만 다시 눌러요. 그동안의 기록은 이어져요.</li>
     </ol>
     <div class="install-actions">
@@ -307,17 +369,25 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
   </section>
 
   <section class="panel">
-    <h2>지난 라운드</h2>
+    <div class="panel-head">
+      <h2>지난 라운드</h2>
+      <button type="button" id="reset-btn" class="danger small">방 기록 초기화</button>
+    </div>
     <div id="history"><p class="empty">아직 끝난 라운드가 없어요.</p></div>
+  </section>
+
+  <section class="panel stats-panel" id="stats-panel" hidden>
+    <h2>대전 기록</h2>
+    <div id="stats"></div>
   </section>
 </div>
 <div id="toast" class="toast" hidden></div>
 <script type="text/plain" id="userscript-src">
 // ==UserScript==
-// @name         나무 링크런 기록기
+// @name         나무위키링크스피드런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.3.2
-// @description  나무 링크런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
+// @version      1.4.0
+// @description  나무위키링크스피드런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -335,11 +405,11 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
   const mark = document.documentElement.dataset.linkrun;
   if (mark) {
     if (BM && mark === 'bm' && window.__linkrunShow) window.__linkrunShow();
-    else if (BM) alert('링크런: Tampermonkey 스크립트가 이미 기록 중이에요. 북마크는 누르지 않아도 돼요.');
+    else if (BM) alert('나무위키링크스피드런: Tampermonkey 스크립트가 이미 기록 중이에요. 북마크는 누르지 않아도 돼요.');
     return;
   }
   if (BM && !/linkrun=/.test(location.hash) && !GM_getValue('linkrun.run', null)) {
-    alert('링크런: 진행 중인 라운드가 없어요. 게임 페이지에서 ‘참가하고 시작 문서 열기’로 연 나무위키 탭에서 눌러 주세요.');
+    alert('나무위키링크스피드런: 진행 중인 라운드가 없어요. 게임 페이지에서 ‘참가하고 시작 문서 열기’로 연 나무위키 탭에서 눌러 주세요.');
     return;
   }
   document.documentElement.dataset.linkrun = BM ? 'bm' : 'tm';
@@ -389,7 +459,7 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
     return 'LR1.' + body + '.' + fnv(body);
   }
 
-  /* ---------- 1. 링크런 페이지에서 넘어온 시작 정보 ---------- */
+  /* ---------- 1. 게임 페이지에서 넘어온 시작 정보 ---------- */
   const hm = location.hash.match(/linkrun=([A-Za-z0-9_-]+)/);
   if (hm) {
     try {
@@ -397,9 +467,9 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
       const cur = load();
       const same = cur && cur.r === d.r && cur.p === d.p && cur.a === d.a;
       // b: 금지 문서 제목들, bp: 금지 규칙 이름들(예: date), bm: 'warn'(경고만) | 'dq'(밟으면 실격)
-      if (!same) save({ r: d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false,
+      if (!same) save({ r: d.r, rn: d.rn || d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false,
         b: Array.isArray(d.b) ? d.b : [], bp: Array.isArray(d.bp) ? d.bp : [], bm: d.bm === 'dq' ? 'dq' : 'warn' });
-    } catch (e) { console.warn('[링크런] 시작 정보를 읽지 못했어요', e); }
+    } catch (e) { console.warn('[나무위키링크스피드런] 시작 정보를 읽지 못했어요', e); }
     history.replaceState(history.state, '', location.pathname + location.search);
   }
 
@@ -456,7 +526,7 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
       const hit = cur.f == null && !cur.g && !cur.x && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
       if (hit) { cur.path = cur.path.slice(0, cur.path.indexOf(hit) + 1); cur.f = hit[1]; }
       save(cur); render(true);
-      if (hit) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
+      if (hit) copyCode('완주! 결과 코드를 복사했어요. 게임 페이지에 붙여넣으세요.');
     });
   }
 
@@ -528,7 +598,7 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
     render(true);
     if (run.x) copyCode('금지 문서 ‘' + t + '’에 들어가서 실격이에요. 결과 코드를 복사했어요.');
     else if (banned) flash('금지 문서 ‘' + t + '’예요! 경고가 붙어요.');
-    if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 링크런 페이지에 붙여넣으세요.');
+    if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 게임 페이지에 붙여넣으세요.');
   }
   setInterval(check, 250);
 
@@ -547,7 +617,7 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
         if (!banCache.has(href)) banCache.set(href, isBanned(run, titleOf(a.href) || ''));
         b = banCache.get(href);
       }
-      if (b && a.dataset.lrBan !== '1') { a.dataset.lrBan = '1'; a.title = '링크런 금지 문서'; }
+      if (b && a.dataset.lrBan !== '1') { a.dataset.lrBan = '1'; a.title = '나무위키링크스피드런 금지 문서'; }
       else if (!b && a.dataset.lrBan === '1') { delete a.dataset.lrBan; a.removeAttribute('title'); }
     }
     if (!on) banCache.clear();
@@ -572,7 +642,8 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
        font:500 13px/1.5 "Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;box-shadow:5px 5px 0 #000;-webkit-font-smoothing:antialiased}
   .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .brand{font-weight:900;letter-spacing:-.02em}
-  .brand::first-letter{color:var(--link)}
+  .brand em{color:var(--link);font-style:normal}
+  .rnd{color:var(--muted);font-weight:800;margin-left:2px}
   .timer{font-weight:900;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em;margin:10px 0 6px}
   .goal{color:var(--muted);font-weight:700}
   .goal b{color:#0B1A13;background:var(--mark);padding:0 5px;border-radius:4px;font-weight:900}
@@ -595,7 +666,7 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
 </style>
 <button class="mini" id="mini" hidden></button>
 <div class="box" id="box">
-  <div class="row"><span class="brand" id="round">링크런</span><button id="fold" title="접기">접기</button></div>
+  <div class="row"><span class="brand"><em>나무</em>위키<em>링크</em>스피드런 <span id="round" class="rnd"></span></span><button id="fold" title="접기">접기</button></div>
   <div class="timer" id="timer">00:00.0</div>
   <div class="goal">목표 <b id="target"></b></div>
   <div class="stat" id="stat"></div>
@@ -628,7 +699,7 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
   }
   $('fold').onclick = () => { folded = true; render(true); };
   $('mini').onclick = () => { folded = false; render(true); };
-  $('copy').onclick = () => copyCode('결과 코드를 복사했어요. 링크런 페이지의 입력칸에 붙여넣으세요.');
+  $('copy').onclick = () => copyCode('결과 코드를 복사했어요. 게임 페이지의 입력칸에 붙여넣으세요.');
   $('giveup').onclick = () => arm('giveup', () => {
     const run = load(); if (!run || run.f != null || run.x) return;
     run.g = true; save(run); copyCode('포기했어요. 결과 코드를 복사했어요.');
@@ -647,11 +718,11 @@ details.hist summary{cursor:pointer;display:flex;gap:12px;flex-wrap:wrap;align-i
     const state = run.f != null ? 'done' : run.x ? 'dq' : run.g ? 'out' : 'run';
     const timerText = state === 'done' ? fmt(run.f) : state === 'dq' ? '실격' : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
     $('timer').textContent = timerText;
-    $('mini').textContent = '링크런 ' + timerText;
+    $('mini').textContent = '나무위키링크스피드런 ' + timerText;
     if (!full && run.path.length === lastLen && state === lastState) return;
     lastLen = run.path.length; lastState = state;
 
-    $('round').textContent = '링크런 ' + run.r + 'R';
+    $('round').textContent = (run.rn || run.r) + 'R';
     $('target').textContent = run.t + (run.tr ? ' (= ' + run.tr + ')' : run.tr === undefined && state === 'run' ? ' · 넘겨주기 확인 중' : '');
     const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j' || x[2] === 'x').length;
     const nBan = ((run.b || []).length) + ((run.bp || []).includes('date') ? ' + 연도·날짜' : '');
@@ -752,7 +823,7 @@ function fmt(ms){
 const banOf = g => (g && g.rules && g.rules.ban) || null;
 const startLink = g => {
   const ban = banOf(g) || {};
-  return namuUrl(g.start) + "#linkrun=" + b64e(JSON.stringify({ r: g.round, s: g.start, t: g.target, a: g.startAt, p: me.id,
+  return namuUrl(g.start) + "#linkrun=" + b64e(JSON.stringify({ r: g.round, rn: dispRound(g.round), s: g.start, t: g.target, a: g.startAt, p: me.id,
     b: ban.titles || [], bp: ban.patterns || [], bm: ban.mode === "dq" ? "dq" : "warn" }));
 };
 const HOW = { b: "뒤로", o: "본문 밖", j: "링크 없이 이동", x: "금지 문서" };
@@ -796,8 +867,11 @@ function onWriteErr(e){
 }
 
 const G = () => state || { round: 0, status: "lobby" };
+const SINCE = () => G().since || 0;
+const dispRound = r => r - SINCE();
+const seasonHistory = () => history.filter(h => h.round > SINCE());
 const now = () => Date.now();
-const roundPlayers = () => players.filter(p => p.round === G().round && G().round > 0);
+const roundPlayers = () => players.filter(p => p.round === G().round && G().round > SINCE());
 const mine = () => roundPlayers().find(p => p.id === me.id) || null;
 const isCounting = () => G().status === "running" && now() < G().startAt;
 const isLive = () => G().status === "running" && now() >= G().startAt;
@@ -899,7 +973,8 @@ function startRound(start, target, blind){
   if (ban) rules.ban = ban;
   const next = {
     round: (G().round || 0) + 1, status: "running", start, target, blind: !!blind,
-    startAt: now() + COUNTDOWN_MS, host: me.name, rules
+    startAt: now() + COUNTDOWN_MS, host: me.name, rules,
+    since: SINCE()   // 방 기록 초기화 시점을 이어받아요 (빠뜨리면 초기화가 풀려요)
   };
   queue(() => db.doc("game/state").set(next));
   $("#setup-start").value = ""; $("#setup-target").value = "";
@@ -909,7 +984,7 @@ function endRound(){
   armedEnd = false;
   const g = G();
   const results = sortBoard(roundPlayers()).map(p => ({
-    name: p.name, finishedMs: p.finishedMs, gaveUp: !!p.gaveUp, dq: isDq(p, g.rules), clicks: p.path.length, auto: !!p.auto,
+    id: p.id, name: p.name, finishedMs: p.finishedMs, gaveUp: !!p.gaveUp, dq: isDq(p, g.rules), clicks: p.path.length, auto: !!p.auto,
     warns: warnCount(p.path, g.rules), path: p.path.map(x => ({ t: x.t, how: x.how || "m" }))
   }));
   queue(async () => {
@@ -966,10 +1041,10 @@ function banLabel(ban){
 
 function renderStage(){
   const g = G(), p = mine();
-  const counting = isCounting(), live = isLive(), started = g.round > 0;
+  const counting = isCounting(), live = isLive(), started = g.round > SINCE();
   const reveal = started && !counting;
   const meta = $("#stage-meta"); meta.replaceChildren();
-  meta.append(h("span", { class: "round" }, started ? g.round + "라운드" : "대기실"));
+  meta.append(h("span", { class: "round" }, started ? dispRound(g.round) + "라운드" : "대기실"));
   const pill = g.status === "running" ? (counting ? ["run","곧 시작"] : ["run","진행 중"]) : g.status === "ended" ? ["done","종료"] : ["","출제 대기"];
   meta.append(h("span", { class: "pill " + pill[0] }, pill[1]));
   if (started) {
@@ -1014,7 +1089,7 @@ function renderStage(){
 /* Updates only the clock text, so the 100ms tick never replaces buttons mid-click. */
 function renderClock(){
   const g = G(), p = mine();
-  const counting = isCounting(), live = isLive(), started = g.round > 0;
+  const counting = isCounting(), live = isLive(), started = g.round > SINCE();
   const timer = $("#timer"), sub = $("#clock-sub");
   timer.classList.toggle("counting", counting);
   if (counting) { timer.textContent = String(Math.ceil((g.startAt - now())/1000)); sub.textContent = "초 뒤 시작 문서가 공개돼요"; }
@@ -1045,7 +1120,7 @@ function renderRun(){
 function renderBoard(){
   const g = G(), box = $("#board"); box.replaceChildren();
   const list = sortBoard(roundPlayers());
-  if (!list.length) { box.append(h("p", { class: "empty" }, g.round ? "아직 참가한 사람이 없어요." : "라운드가 시작되면 참가자가 여기에 떠요.")); return; }
+  if (!list.length) { box.append(h("p", { class: "empty" }, g.round > SINCE() ? "아직 참가한 사람이 없어요." : "라운드가 시작되면 참가자가 여기에 떠요.")); return; }
   const p = mine();
   const iAmDone = p && (p.finishedMs != null || p.gaveUp);
   const revealAll = g.status === "ended" || iAmDone;
@@ -1074,28 +1149,222 @@ function renderSetup(){
   $("#setup-panel").hidden = g.status === "running";
 }
 
+/* ---------- 지난 라운드 & 대전 기록 ---------- */
+const openRounds = new Set();
+let historyKey = "";
+const resultState = x => x.dq ? "dq" : x.finishedMs != null ? "done" : x.gaveUp ? "out" : "dnf";
+const RESULT_LABEL = { dq: "실격", out: "포기", dnf: "미완주" };
+const playerKey = x => x.id || "n:" + (x.name || "");
+
 function renderHistory(){
+  const list = seasonHistory();
+  const key = SINCE() + "|" + list.map(r => r.round + ":" + (r.endedAt || 0)).join(",");
+  if (key === historyKey) return;          // 기록이 바뀔 때만 다시 그려요 (펼친 상태 유지)
+  historyKey = key;
   const box = $("#history"); box.replaceChildren();
-  if (!history.length) { box.append(h("p", { class: "empty" }, "아직 끝난 라운드가 없어요.")); return; }
-  for (const r of history) {
-    const win = (r.results || []).find(x => x.finishedMs != null && !x.dq);
-    const table = h("table", {}, h("tbody", {}, (r.results || []).map((x, i) => h("tr", {},
-      h("td", {}, x.name || "이름 없음"),
+  if (!list.length) box.append(h("p", { class: "empty" }, "아직 끝난 라운드가 없어요."));
+  for (const r of list) {
+    const ORDER = { done: 0, out: 1, dnf: 1, dq: 2 };
+    const res = [...(r.results || [])].sort((a, b) => ORDER[resultState(a)] - ORDER[resultState(b)]
+      || (resultState(a) === "done" ? a.finishedMs - b.finishedMs || a.clicks - b.clicks : 0));
+    let rank = 0;
+    const chips = res.map(x => {
+      const st = resultState(x);
+      if (st === "done") rank++;
+      return h("span", { class: "rchip " + st + (st === "done" && rank === 1 ? " win" : "") },
+        st === "done" ? h("b", { class: "rk" }, rank) : null,
+        h("span", { class: "nm" }, x.name || "이름 없음"),
+        h("span", { class: "tm" }, st === "done" ? fmt(x.finishedMs) + " · " + x.clicks + "클릭" : RESULT_LABEL[st]));
+    });
+    const table = h("table", {}, h("tbody", {}, res.map(x => h("tr", {},
+      h("td", { class: "who-cell" }, x.name || "이름 없음"),
       h("td", { class: "num" }, x.dq ? "실격" : x.finishedMs != null ? fmt(x.finishedMs) : x.gaveUp ? "포기" : "미완주"),
       h("td", { class: "num" }, x.clicks + "클릭" + (x.warns ? " · 경고 " + x.warns : "")),
       h("td", {}, h("ol", { class: "path" }, pathList(x.path || [], { start: r.start, goalIdx: x.finishedMs != null ? (x.path||[]).length-1 : -1, rules: r.rules })))))));
-    box.append(h("details", { class: "hist" },
-      h("summary", {}, h("span", { class: "rn" }, r.round + "R"), h("span", { class: "pair" }, r.start + " → " + r.target),
-        h("span", { class: "win" }, win ? "우승 " + (win.name || "이름 없음") + " · " + fmt(win.finishedMs) + " · " + win.clicks + "클릭" : "완주자 없음")),
-      h("div", { class: "hist-scroll" }, table)));
+    const d = h("details", { class: "hist", open: openRounds.has(r.round) },
+      h("summary", {},
+        h("span", { class: "hist-top" }, h("span", { class: "rn" }, dispRound(r.round) + "R"), h("span", { class: "pair" }, r.start + " → " + r.target),
+          h("span", { class: "more" }, "경로 보기")),
+        h("span", { class: "rchips" }, chips.length ? chips : h("span", { class: "rchip dnf" }, "참가자 없음"))),
+      h("div", { class: "hist-scroll" }, table));
+    d.addEventListener("toggle", () => { d.open ? openRounds.add(r.round) : openRounds.delete(r.round); });
+    box.append(d);
   }
+  renderStats(list);
+}
+
+/* 대전 기록: 이번 방(초기화 이후) 전체 라운드를 사람별로 모아요 */
+function seasonStats(list){
+  const byKey = new Map();
+  const rounds = [...list].sort((a, b) => a.round - b.round);
+  for (const r of rounds) {
+    const res = r.results || [];
+    const winner = res.find(x => resultState(x) === "done");
+    for (const x of res) {
+      const k = playerKey(x);
+      if (!byKey.has(k)) byKey.set(k, { key: k, name: x.name, rounds: 0, done: 0, wins: 0, dq: 0, warns: 0, times: [], clicks: [], pts: [] });
+      const p = byKey.get(k);
+      p.name = x.name || p.name;               // 최근 닉네임으로
+      p.rounds++; p.warns += x.warns || 0;
+      if (resultState(x) === "dq") p.dq++;
+      if (resultState(x) === "done") {
+        p.done++; p.times.push(x.finishedMs); p.clicks.push(x.clicks);
+        p.pts.push({ round: r.round, ms: x.finishedMs, clicks: x.clicks, pair: r.start + " → " + r.target });
+      }
+      if (winner && playerKey(winner) === k) p.wins++;
+    }
+  }
+  const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+  const people = [...byKey.values()].map(p => ({ ...p, best: p.times.length ? Math.min(...p.times) : null, avgMs: avg(p.times), avgClicks: avg(p.clicks) }));
+  people.sort((a, b) => b.wins - a.wins || b.done - a.done || (a.avgMs ?? 1e15) - (b.avgMs ?? 1e15) || (a.name || "").localeCompare(b.name || ""));
+  return { rounds, people };
+}
+
+const SERIES = 8;
+function svgEl(tag, attrs, ...kids){
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs || {})) if (v != null) el.setAttribute(k, v);
+  for (const c of kids.flat()) if (c != null) el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  return el;
+}
+function niceStep(max, n){
+  const raw = max / n, pow = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / pow;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * pow;
+}
+const fmtShort = ms => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+function renderStats(list){
+  const panel = $("#stats-panel"), body = $("#stats");
+  const { rounds, people } = seasonStats(list);
+  panel.hidden = !rounds.length;
+  body.replaceChildren();
+  if (!rounds.length) return;
+
+  // 한눈에: 요약 숫자 4개
+  const finishes = people.flatMap(p => p.pts.map(pt => ({ ...pt, name: p.name })));
+  const fastest = finishes.reduce((a, b) => (!a || b.ms < a.ms ? b : a), null);
+  const fewest = finishes.reduce((a, b) => (!a || b.clicks < a.clicks || (b.clicks === a.clicks && b.ms < a.ms) ? b : a), null);
+  const champ = people[0] && people[0].wins ? people[0] : null;
+  const tile = (k, v, sub) => h("div", { class: "tile" }, h("span", { class: "k" }, k), h("span", { class: "v" }, v), h("span", { class: "s" }, sub || ""));
+  body.append(h("div", { class: "tiles" },
+    tile("라운드", rounds.length + "판", "참가 " + people.length + "명"),
+    tile("최다 우승", champ ? champ.name || "이름 없음" : "—", champ ? champ.wins + "승 / " + champ.rounds + "판" : "아직 우승자 없음"),
+    tile("최단 기록", fastest ? fmt(fastest.ms) : "—", fastest ? (fastest.name || "이름 없음") + " · " + fastest.pair : "완주 기록 없음"),
+    tile("최소 클릭", fewest ? fewest.clicks + "클릭" : "—", fewest ? (fewest.name || "이름 없음") + " · " + fewest.pair : "완주 기록 없음")));
+
+  // 사람별 색: 대전 기록 순위 순서대로 고정 (최대 8명)
+  const colored = people.slice(0, SERIES);
+  const colorOf = new Map(colored.map((p, i) => [p.key, "var(--s" + (i + 1) + ")"]));
+
+  // 1) 라운드별 완주 시간 (선 + 점)
+  const chartBox = h("figure", { class: "chart" }, h("figcaption", {}, "라운드별 완주 시간", h("span", { class: "hint-inline" }, " 낮을수록 빨라요 · 점에 마우스를 올리면 자세히")));
+  const legend = h("div", { class: "legend" }, colored.map(p => h("span", { class: "lg" }, h("i", { style: "background:" + colorOf.get(p.key) }), p.name || "이름 없음")));
+  chartBox.append(legend);
+  const W = 640, H = 250, M = { l: 48, r: colored.length <= 4 ? 88 : 16, t: 12, b: 30 };
+  const xs = rounds.map(r => r.round);
+  const maxMs = Math.max(60000, ...finishes.map(f => f.ms));
+  const step = niceStep(maxMs, 4), yMax = Math.ceil(maxMs / step) * step;
+  const x = rv => rounds.length === 1 ? (M.l + (W - M.r)) / 2 : M.l + (xs.indexOf(rv) / (xs.length - 1)) * (W - M.l - M.r);
+  const y = ms => M.t + (1 - ms / yMax) * (H - M.t - M.b);
+  const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, class: "plot", role: "img", "aria-label": "라운드별 완주 시간 그래프" });
+  for (let v = 0; v <= yMax + 1; v += step) {
+    svg.append(svgEl("line", { x1: M.l, x2: W - M.r, y1: y(v), y2: y(v), class: v === 0 ? "axis" : "grid" }));
+    svg.append(svgEl("text", { x: M.l - 8, y: y(v) + 4, class: "tick", "text-anchor": "end" }, fmtShort(v)));
+  }
+  const every = Math.ceil(xs.length / 12);
+  xs.forEach((rv, i) => { if (i % every === 0 || i === xs.length - 1) svg.append(svgEl("text", { x: x(rv), y: H - 8, class: "tick", "text-anchor": "middle" }, dispRound(rv) + "R")); });
+  const tip = h("div", { class: "tip", hidden: true });
+  const hits = [], endLabels = [];
+  for (const p of colored) {
+    const c = colorOf.get(p.key);
+    // 완주 못 한 라운드에서는 선을 끊어요
+    let seg = [];
+    const flush = () => { if (seg.length > 1) svg.append(svgEl("polyline", { points: seg.map(pt => x(pt.round) + "," + y(pt.ms)).join(" "), class: "ln", stroke: c })); seg = []; };
+    const byRound = new Map(p.pts.map(pt => [pt.round, pt]));
+    for (const rv of xs) { const pt = byRound.get(rv); if (pt) seg.push(pt); else flush(); }
+    flush();
+    for (const pt of p.pts) {
+      svg.append(svgEl("circle", { cx: x(pt.round), cy: y(pt.ms), r: 5, class: "dot", fill: c }));
+      hits.push({ cx: x(pt.round), cy: y(pt.ms), p, pt, c });
+    }
+    if (colored.length <= 4 && p.pts.length) {
+      const last = p.pts[p.pts.length - 1];
+      endLabels.push({ name: p.name || "", x: x(last.round) + 10, y: y(last.ms) + 4 });
+    }
+  }
+  // 끝 이름표가 겹치지 않게 위아래로 벌려요 (최소 14px 간격, 그래프 안쪽으로)
+  endLabels.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < endLabels.length; i++) endLabels[i].y = Math.max(endLabels[i].y, endLabels[i - 1].y + 14);
+  const over = endLabels.length ? endLabels[endLabels.length - 1].y - (H - M.b) : 0;
+  if (over > 0) endLabels.forEach(l => { l.y -= over; });
+  for (const l of endLabels) svg.append(svgEl("text", { x: l.x, y: Math.max(M.t + 10, l.y), class: "dlabel" }, l.name));
+  const hitLayer = svgEl("g", {});
+  for (const hp of hits) {
+    const t = svgEl("circle", { cx: hp.cx, cy: hp.cy, r: 14, class: "hit", tabindex: "0" });
+    const show = () => {
+      tip.replaceChildren(h("b", {}, hp.p.name || "이름 없음"), h("span", {}, dispRound(hp.pt.round) + "R · " + hp.pt.pair), h("span", { class: "tv" }, fmt(hp.pt.ms) + " · " + hp.pt.clicks + "클릭"));
+      tip.style.setProperty("--dot", hp.c);
+      tip.hidden = false;
+      const box = svg.getBoundingClientRect(), sx = box.width / W;
+      tip.style.left = Math.min(box.width - 170, Math.max(0, hp.cx * sx - 80)) + "px";
+      tip.style.top = (hp.cy * sx - 70) + "px";
+    };
+    t.addEventListener("pointerenter", show); t.addEventListener("focus", show);
+    t.addEventListener("pointerleave", () => { tip.hidden = true; }); t.addEventListener("blur", () => { tip.hidden = true; });
+    hitLayer.append(t);
+  }
+  svg.append(hitLayer);
+  chartBox.append(h("div", { class: "plot-wrap" }, svg, tip));
+  if (people.length > SERIES) chartBox.append(h("p", { class: "hint-inline" }, "그래프에는 순위 상위 " + SERIES + "명만 그려요. 전체는 아래 표에 있어요."));
+
+  // 2) 우승 횟수 (가로 막대, 한 가지 색)
+  const winners = people.filter(p => p.wins > 0);
+  const bars = h("figure", { class: "chart" }, h("figcaption", {}, "우승 횟수"));
+  if (!winners.length) bars.append(h("p", { class: "empty" }, "아직 우승자가 없어요."));
+  const maxW = Math.max(1, ...winners.map(p => p.wins));
+  for (const p of winners) bars.append(h("div", { class: "bar-row" },
+    h("span", { class: "bn" }, p.name || "이름 없음"),
+    h("span", { class: "track" }, h("i", { style: "width:" + (p.wins / maxW * 100) + "%" })),
+    h("span", { class: "bv" }, p.wins + "승")));
+
+  body.append(h("div", { class: "charts" }, chartBox, bars));
+
+  // 3) 사람별 표
+  const td = (v, cls) => h("td", { class: cls || "num" }, v);
+  body.append(h("div", { class: "hist-scroll" }, h("table", { class: "standings" },
+    h("thead", {}, h("tr", {}, ["", "플레이어", "우승", "완주", "완주율", "최고 기록", "평균 시간", "평균 클릭", "경고", "실격"].map((t, i) => h("th", { class: i > 1 ? "num" : null }, t)))),
+    h("tbody", {}, people.map((p, i) => h("tr", {},
+      td(i + 1, "num rk-cell"),
+      h("td", { class: "who-cell" }, colorOf.has(p.key) ? h("i", { class: "sw", style: "background:" + colorOf.get(p.key) }) : null, p.name || "이름 없음"),
+      td(p.wins), td(p.done + "/" + p.rounds), td(Math.round(p.done / p.rounds * 100) + "%"),
+      td(p.best != null ? fmt(p.best) : "—"), td(p.avgMs != null ? fmt(p.avgMs) : "—"),
+      td(p.avgClicks != null ? p.avgClicks.toFixed(1) : "—"), td(p.warns), td(p.dq)))))));
+}
+
+let armedReset = false;
+function renderResetBtn(){
+  const b = $("#reset-btn"), g = G();
+  b.disabled = g.status === "running";
+  b.title = b.disabled ? "라운드가 끝난 뒤에 초기화할 수 있어요" : "";
+  b.classList.toggle("armed", armedReset);
+  b.textContent = armedReset ? "한 번 더 누르면 초기화" : "방 기록 초기화";
+}
+function resetRoom(){
+  const g = G();
+  if (g.status === "running") { toast("라운드가 끝난 뒤에 초기화할 수 있어요."); return; }
+  if (!seasonHistory().length && !(g.round > SINCE())) { toast("초기화할 기록이 없어요."); return; }
+  if (!armedReset) { armedReset = true; renderResetBtn(); setTimeout(() => { armedReset = false; renderResetBtn(); }, 3000); return; }
+  armedReset = false;
+  queue(() => db.doc("game/state").set({ ...g, status: "lobby", since: g.round, resetAt: now(), resetBy: me.name || "" }));
+  toast("방 기록을 초기화했어요. 다음 판은 1라운드부터 시작해요.");
 }
 
 function render(){
   $("#local-banner").hidden = !isLocal;
   if (document.activeElement !== $("#name-input")) $("#name-input").value = me.name;
-  renderStage(); renderRun(); renderBoard(); renderSetup(); renderHistory();
+  renderStage(); renderRun(); renderBoard(); renderSetup(); renderHistory(); renderResetBtn();
 }
+$("#reset-btn").addEventListener("click", resetRoom);
 
 /* ---------- wiring ---------- */
 $("#name-form").addEventListener("submit", e => { e.preventDefault(); saveName(); });
@@ -1113,7 +1382,7 @@ function toBookmarklet(src){
   const body = src.replace(/^\/\/ ==UserScript==[\s\S]*?\/\/ ==\/UserScript==\s*/, "")
     .split("\n").filter(l => !/^\s*\/\//.test(l)).map(l => l.trim()).filter(Boolean).join("\n");
   const shim = "var __LINKRUN_BM=1;" +
-    "if(location.hostname!=='namu.wiki'){alert('링크런: 나무위키 문서 화면에서 눌러 주세요.');return;}" +
+    "if(location.hostname!=='namu.wiki'){alert('나무위키링크스피드런: 나무위키 문서 화면에서 눌러 주세요.');return;}" +
     "var GM_getValue=function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};" +
     "var GM_setValue=function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};" +
     "var GM_setClipboard=function(t){return navigator.clipboard.writeText(t)};";
