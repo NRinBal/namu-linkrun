@@ -1,12 +1,45 @@
 rules_version = '2';
-// 나무 링크런 보안 규칙. Firebase 콘솔 → Firestore Database → 규칙 탭에 통째로 붙여넣고 "게시".
+// 나무위키링크스피드런 보안 규칙. Firebase 콘솔 → Firestore Database → 규칙 탭에 통째로 붙여넣고 "게시".
 // 로그인이 없어서 링크를 아는 사람은 누구나 읽고 쓸 수 있어요. 대신 정해진 자리 밖은 막고,
 // 기록을 지우는 것과 너무 큰 문서는 막아요.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // 로비의 방 목록 (방 이름, 방장, 상태 등)
+    match /lobby/{room} {
+      allow read: if true;
+      allow create, update: if room.size() <= 40 && request.resource.data.keys().size() <= 16
+        && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 40));
+      allow delete: if false;
+    }
+
+    // 접속 상태 (닉네임, 마지막 신호 시각, 있는 방, 준비 여부)
+    match /presence/{pid} {
+      allow read: if true;
+      allow create, update: if pid.size() <= 60 && request.resource.data.keys().size() <= 8;
+      allow delete: if false;
+    }
+
+    // 로비 채팅: 새로 쓰기만, 고치거나 지울 수 없음
+    match /lobbychat/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().size() <= 6
+        && request.resource.data.text is string && request.resource.data.text.size() <= 200;
+      allow update, delete: if false;
+    }
+
+    // 방 채팅
+    match /rooms/{room}/chat/{id} {
+      allow read: if room.size() <= 40;
+      allow create: if room.size() <= 40 && request.resource.data.keys().size() <= 6
+        && request.resource.data.text is string && request.resource.data.text.size() <= 200;
+      allow update, delete: if false;
+    }
+
+    // 방 안의 게임 기록
     match /rooms/{room}/{col}/{id} {
-      allow read: if room.size() <= 30 && col in ['game', 'players', 'history'];
-      allow create, update: if room.size() <= 30
+      allow read: if room.size() <= 40 && col in ['game', 'players', 'history'];
+      allow create, update: if room.size() <= 40
         && col in ['game', 'players', 'history']
         && request.resource.data.keys().size() <= 20
         && (col != 'game' || id == 'state')

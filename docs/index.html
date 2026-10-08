@@ -291,6 +291,151 @@ details.hist[open] .hist-top .more{color:var(--muted)}
 .my-table td.who-cell{white-space:nowrap}
 @media (max-width:760px){#my-body .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.my-head,#my-body{padding-inline:16px}}
 
+
+/* ═════════ 로비 · 방 · 입장 (크레이지아케이드식 배치) ═════════ */
+.wrap{max-width:1200px}
+.card{background:var(--surface);border:2px solid var(--edge);border-radius:16px;box-shadow:4px 4px 0 var(--shadow)}
+button.big{padding:12px 20px;font-size:16px}
+.avatar{display:inline-grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;color:#fff;font-weight:900;font-size:13px;line-height:1;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.avatar.sm{width:24px;height:24px;font-size:11px;box-shadow:0 0 0 2px var(--surface)}
+.avatar.lg{width:46px;height:46px;font-size:19px}
+.avatar.xl{width:64px;height:64px;font-size:26px;border:2.5px solid var(--edge)}
+.count{color:var(--link)}
+
+/* ① 입장 */
+.entry{display:grid;place-items:center;min-height:70vh}
+.entry-card{width:min(720px,100%);background:var(--surface);border:2.5px solid var(--edge);border-radius:22px;box-shadow:7px 7px 0 var(--shadow);padding:clamp(20px,4vw,36px);display:flex;flex-direction:column;gap:18px}
+.logo.big{font-size:clamp(30px,6vw,46px)}
+.logo em{color:var(--link);font-style:normal}
+.entry-steps{list-style:none;margin:0;padding:0;display:flex;gap:8px;flex-wrap:wrap}
+.entry-steps li{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--muted);border:2px solid var(--hair);border-radius:999px;padding:4px 12px 4px 4px}
+.entry-steps li b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--sunk);font-size:12px}
+.entry-steps li.on{color:var(--ink);border-color:var(--edge)}
+.entry-steps li.on b{background:var(--link);color:var(--link-ink)}
+.entry-step label{display:block;font-weight:800;margin-bottom:8px}
+.entry-row{display:flex;gap:10px}
+.entry-row input{font-size:18px;padding:12px 14px}
+.entry-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px}
+#entry-install-slot .panel,#settings-install-slot .panel{border:0;padding:0;background:transparent}
+
+/* ② 로비 */
+.lobby{display:grid;grid-template-columns:270px minmax(0,1fr);gap:20px;align-items:start}
+.lobby-side{display:flex;flex-direction:column;gap:16px;position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}
+.profile{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;padding:16px}
+.profile-text{display:flex;flex-direction:column;min-width:0}
+.profile-text b{font-size:18px;font-weight:900;overflow-wrap:anywhere}
+.profile-text span{font-size:12px;color:var(--muted);font-weight:700}
+.profile .open-settings{grid-column:1 / -1;justify-self:start}
+.online{padding:14px 16px}
+.online h3{margin:0 0 10px;font-size:14px}
+.online-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto}
+.online-list li{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:9px;align-items:center}
+.online-list .avatar{grid-row:1 / 3}
+.online-list .on-name{font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.online-list .on-where{font-size:11.5px;color:var(--muted);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.online-list li.me .on-name::after{content:" (나)";color:var(--link);font-size:11px}
+.lobby-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.lobby-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lobby-top .logo{font-size:clamp(22px,3vw,30px)}
+.lobby-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.room-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.room-card{display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;padding:14px 16px;min-height:132px;border-radius:16px;font-weight:700}
+.room-card.full{opacity:.6}
+.room-card.empty{border:2px dashed var(--hair);background:transparent;box-shadow:none;color:var(--muted);display:grid;place-items:center;font-size:14px;text-align:center}
+.rc-top{display:flex;align-items:center;gap:8px}
+.rc-no{font-weight:900;color:var(--link);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.rc-status{font-size:12px;font-weight:900;padding:2px 10px;border-radius:999px;background:var(--link-soft);color:var(--link)}
+.room-card.playing .rc-status{background:var(--mark);color:var(--mark-ink)}
+.rc-ban{font-size:11px;font-weight:800;padding:1px 8px;border-radius:999px;border:1.5px solid var(--bad);color:var(--bad)}
+.rc-name{font-size:18px;font-weight:900;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-host{font-size:12px;color:var(--muted);font-weight:700}
+.rc-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
+.rc-people{display:flex;padding-left:6px}
+.rc-people .avatar{margin-left:-6px}
+.rc-count{font-variant-numeric:tabular-nums;font-size:15px}
+.pager{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-weight:800;font-variant-numeric:tabular-nums}
+.code-form{display:flex;gap:6px}
+.code-form input{width:170px;padding:6px 10px}
+
+/* 채팅 */
+.chat{display:flex;flex-direction:column;background:var(--surface);border:2px solid var(--edge);border-radius:16px;box-shadow:4px 4px 0 var(--shadow);overflow:hidden;min-width:0}
+.chat-head{font-weight:900;font-size:13px;padding:8px 14px;border-bottom:2px solid var(--hair);background:var(--sunk)}
+.chat-log{list-style:none;margin:0;padding:8px 14px;height:170px;overflow:auto;display:flex;flex-direction:column;gap:3px;font-size:13.5px}
+.chat-log li{display:flex;gap:6px;align-items:baseline;line-height:1.45}
+.chat-log li.mine .cm{color:var(--ink);font-weight:700}
+.chat-log .ct{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.chat-log b{font-weight:900;flex:none}
+.chat-log .cm{color:var(--ink);font-weight:500;overflow-wrap:anywhere;min-width:0}
+.chat-log .chat-empty{color:var(--muted);font-weight:700}
+.chat-form{display:flex;gap:6px;padding:8px 10px;border-top:2px solid var(--hair)}
+.chat-form input{padding:7px 10px;min-width:0}
+.chat-form button{white-space:nowrap;flex:none}
+.view.room{display:flex;flex-direction:column;gap:14px}
+
+/* ③ 방 */
+.room-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.room-no{font-weight:900;color:var(--link-ink);background:var(--link);border-radius:8px;padding:2px 9px;font-variant-numeric:tabular-nums}
+.room-top h1{margin:0;font-size:clamp(20px,3vw,26px);font-weight:900;letter-spacing:-.02em;overflow-wrap:anywhere}
+.room-status{font-size:12px;font-weight:900;padding:3px 11px;border-radius:999px;background:var(--link-soft);color:var(--link)}
+.room-status.playing{background:var(--mark);color:var(--mark-ink)}
+.slots{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px}
+.slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 6px 10px;background:var(--surface);border:2px solid var(--hair);border-radius:14px;min-width:0;text-align:center}
+.slot.me{border-color:var(--link)}
+.slot.is-ready{border-color:var(--edge);box-shadow:3px 3px 0 var(--shadow)}
+.slot.empty{border-style:dashed;background:transparent;color:var(--muted);font-size:12px;font-weight:700;justify-content:center;min-height:116px}
+.slot-no{position:absolute;top:5px;left:8px;font-size:10.5px;font-weight:900;color:var(--muted)}
+.crown{position:absolute;top:2px;right:7px;color:var(--gold);font-size:16px;line-height:1}
+.slot-name{font-size:13px;font-weight:900;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .pill{font-size:11px;padding:1px 8px}
+.pill.ready{background:var(--link);color:var(--link-ink)}
+.pill.host{background:var(--mark);color:var(--mark-ink)}
+.room-body{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+.room-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.room-side{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}
+.room-side .chat-log{height:210px}
+.side-board{padding:14px 16px}
+.side-board h2{font-size:15px;margin-bottom:6px}
+/* 방 안의 무대는 한 화면에 들어오게 줄여요 */
+.room .stage{padding:16px 20px;gap:12px;box-shadow:5px 5px 0 var(--shadow)}
+.room .doc-card .v{font-size:clamp(24px,3.4vw,40px)}
+.room .timer{font-size:clamp(40px,6vw,72px)}
+.room .clock{padding-top:10px}
+.room .stage-actions a.primary{padding:10px 18px;font-size:16px}
+.log-form{display:flex;gap:8px}
+.log-form button{white-space:nowrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs [role="tab"]{box-shadow:none;border-color:var(--hair);background:var(--surface);color:var(--muted);padding:7px 14px}
+.tabs [role="tab"].on{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.tabs [role="tab"]:hover:not(:disabled),.tabs [role="tab"]:active:not(:disabled){transform:none;box-shadow:none}
+.tab-body{padding:18px 20px}
+.host-note{margin:0;font-weight:800;color:var(--muted);background:var(--sunk);border-radius:12px;padding:12px 14px}
+.ready-btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:16px;border:2.5px solid var(--edge);border-radius:16px;background:var(--mark);color:var(--mark-ink);box-shadow:5px 5px 0 var(--shadow)}
+.ready-btn b{font-size:22px;font-weight:900;letter-spacing:-.01em}
+.ready-btn small{font-size:12px;font-weight:700;opacity:.8}
+.ready-btn.on{background:var(--link);color:var(--link-ink)}
+.ready-btn:disabled{background:var(--sunk);color:var(--muted);opacity:1}
+
+/* 설정 · 방 만들기 창 */
+.settings-dialog{width:min(760px,calc(100% - 32px))}
+.create-dialog{width:min(460px,calc(100% - 32px))}
+.settings-body{padding:18px 22px 24px;display:flex;flex-direction:column;gap:16px}
+.settings-body .me input{width:auto;flex:1}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-weight:800}
+
+@media (max-width:980px){
+  .room-body{grid-template-columns:1fr}
+  .room-side{position:static}
+  .slots{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .lobby{grid-template-columns:1fr}
+  .lobby-side{position:static}
+  .online-list{max-height:180px}
+  .room-cards{grid-template-columns:1fr}
+  .entry-row{flex-direction:column}
+  .code-form input{width:130px}
+}
+
 @media (max-width:760px){
   .grid,.setup-grid,.ban-more{grid-template-columns:1fr}
   .route{grid-template-columns:1fr;align-items:start}
@@ -304,90 +449,217 @@ details.hist[open] .hist-top .more{color:var(--muted)}
 </style>
 
 <div class="wrap">
-  <header class="top">
-    <div class="brand"><span class="logo"><em>나무</em>위키<em>링크</em>스피드런</span><span class="tagline">문서 속 링크만 눌러서 목표 문서까지</span></div>
+  <div id="local-banner" class="banner" hidden>혼자 연습 모드예요. 기록은 이 화면에만 남아요.</div>
+
+  <!-- ① 입장: 닉네임 → 북마크 → 로비 -->
+  <section id="view-entry" class="view entry" hidden>
+    <div class="entry-card">
+      <div class="logo big"><em>나무</em>위키<em>링크</em>스피드런</div>
+      <p class="tagline">문서 속 링크만 눌러서 목표 문서까지. 친구들과 누가 먼저 도착하나 겨뤄요.</p>
+      <ol class="entry-steps" aria-label="입장 단계">
+        <li id="es-1" class="on"><b>1</b> 닉네임</li><li id="es-2"><b>2</b> 북마크</li><li id="es-3"><b>3</b> 로비 입장</li>
+      </ol>
+      <form id="entry-name-form" class="entry-step">
+        <label for="entry-name">로비에서 쓸 닉네임</label>
+        <div class="entry-row">
+          <input id="entry-name" maxlength="16" placeholder="최대 16자" autocomplete="off">
+          <button type="submit" class="primary">다음</button>
+        </div>
+      </form>
+      <div id="entry-step2" class="entry-step" hidden>
+        <div id="entry-install-slot"></div>
+        <div class="entry-actions">
+          <button type="button" id="entry-skip">나중에 할래요</button>
+          <button type="button" id="entry-done" class="primary big">북마크 만들었어요 · 로비로</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② 로비 -->
+  <section id="view-lobby" class="view lobby" hidden>
+    <aside class="lobby-side">
+      <div class="profile card">
+        <span class="avatar xl" id="lobby-avatar" aria-hidden="true"></span>
+        <div class="profile-text"><b id="lobby-name"></b><span id="lobby-sub">로비에 있어요</span></div>
+        <button type="button" class="small open-settings">설정</button>
+      </div>
+      <div class="online card">
+        <h3>접속 중 <span id="online-count" class="count"></span></h3>
+        <ul id="online-list" class="online-list"></ul>
+      </div>
+    </aside>
+    <div class="lobby-main">
+      <header class="lobby-top">
+        <div class="logo"><em>나무</em>위키<em>링크</em>스피드런</div>
+        <div class="lobby-actions">
+          <button type="button" id="create-room-btn" class="primary big">방 만들기</button>
+          <button type="button" id="quick-btn" class="big">바로 시작</button>
+          <div class="seg" role="group" aria-label="방 보기">
+            <button type="button" id="filter-all" class="on">모든 방</button>
+            <button type="button" id="filter-wait">대기 중인 방</button>
+          </div>
+          <button type="button" id="solo-btn">혼자 연습</button>
+        </div>
+      </header>
+      <div class="room-cards" id="room-cards"></div>
+      <div class="pager">
+        <button type="button" id="page-prev" class="small" aria-label="이전 쪽">◀</button>
+        <span id="page-label"></span>
+        <button type="button" id="page-next" class="small" aria-label="다음 쪽">▶</button>
+        <span class="spacer"></span>
+        <form id="code-form" class="code-form">
+          <label for="code-input" class="sr">방 코드</label>
+          <input id="code-input" maxlength="40" placeholder="방 코드로 입장" autocomplete="off">
+          <button type="submit" class="small">입장</button>
+        </form>
+      </div>
+      <section class="chat" id="lobby-chat" aria-label="로비 채팅">
+          <div class="chat-head">로비 채팅</div>
+          <ol class="chat-log" id="lobby-chat-log" aria-live="polite"></ol>
+          <form class="chat-form" id="lobby-chat-form">
+            <label for="lobby-chat-input" class="sr">메시지</label>
+            <input id="lobby-chat-input" maxlength="200" autocomplete="off" placeholder="메시지 입력 (Enter)">
+            <button type="submit" class="small">보내기</button>
+          </form>
+        </section>
+    </div>
+  </section>
+
+  <!-- ③ 방: 대기방 겸 게임 화면 -->
+  <section id="view-room" class="view room" hidden>
+    <header class="room-top">
+      <button type="button" id="leave-btn" class="small">← 로비</button>
+      <span class="room-no" id="room-no"></span>
+      <h1 id="room-title"></h1>
+      <span class="room-status" id="room-status"></span>
+      <span class="spacer"></span>
+      <button type="button" id="room-copy" class="small">초대 링크 복사</button>
+      <button type="button" id="my-btn" class="small">내 기록</button>
+      <button type="button" class="small open-settings">설정</button>
+    </header>
+    <div class="slots" id="slots" aria-label="참가자"></div>
+    <div class="room-body">
+      <div class="room-main">
+        <section class="stage" aria-live="polite">
+          <div class="stage-meta" id="stage-meta"></div>
+          <div class="route">
+            <a id="start-doc" class="doc-card" target="_blank" rel="noopener"><span class="k">시작 문서</span><span class="v" id="start-v">?</span><span class="go" aria-hidden="true">눌러서 출발 ↗</span></a>
+            <div class="route-arrow" aria-hidden="true"></div>
+            <div id="target-doc" class="doc-card target"><span class="k">목표 문서</span><span class="v" id="target-v">?</span></div>
+          </div>
+          <details id="ban-view" class="ban-view" hidden><summary id="ban-summary"></summary><p id="ban-list"></p></details>
+          <div class="clock"><div id="timer" class="timer">00:00.0</div><div id="clock-sub" class="clock-sub"></div></div>
+          <div id="stage-actions" class="stage-actions"></div>
+            <form id="log-form" class="log-form">
+              <input id="doc-input" autocomplete="off" placeholder="완주하면 결과 코드(LR1.…)를 여기에 붙여넣기 · 직접 기록은 문서 제목" aria-label="결과 코드 또는 도착한 문서">
+              <button type="submit" id="log-btn" class="primary">기록</button>
+            </form>
+        </section>
+        <div class="tabs" role="tablist" aria-label="방 메뉴">
+          <button type="button" role="tab" data-tab="setup" id="tab-setup">출제</button>
+          <button type="button" role="tab" data-tab="path" id="tab-path">내 경로</button>
+          <button type="button" role="tab" data-tab="history" id="tab-history">지난 라운드</button>
+          <button type="button" role="tab" data-tab="stats" id="tab-stats">대전 기록</button>
+        </div>
+        <div class="tab-body panel">
+          <section class="tabpanel" id="setup-panel" data-tab="setup">
+            <p id="setup-note" class="host-note" hidden></p>
+            <div id="setup-body">
+            <div class="setup-grid">
+              <label for="setup-start">시작 문서<input id="setup-start" autocomplete="off" placeholder="예: 김치"></label>
+              <label for="setup-target">목표 문서<input id="setup-target" autocomplete="off" placeholder="예: 블랙홀"></label>
+            </div>
+            <div class="checks">
+              <label for="rule-back"><input type="checkbox" id="rule-back" checked> 뒤로 가기 허용</label>
+              <label for="rule-foot"><input type="checkbox" id="rule-foot"> 각주 속 링크 허용</label>
+            </div>
+            <fieldset class="ban-setup">
+              <legend>금지 문서 <span class="hint-inline">어디로든 이어지는 허브 문서를 막아요. 나무위키 화면에서 해당 링크에 취소선이 그어져요.</span></legend>
+              <div class="checks" id="ban-presets"></div>
+              <div class="ban-more">
+                <label for="ban-custom">직접 추가 <span class="hint-inline">쉼표나 줄바꿈으로 구분</span>
+                  <textarea id="ban-custom" rows="2" placeholder="예: 서울특별시, 조선, 인공지능"></textarea></label>
+                <label for="ban-mode">금지 문서에 들어가면
+                  <select id="ban-mode"><option value="warn">경고만 붙이기</option><option value="dq">바로 실격</option></select></label>
+              </div>
+            </fieldset>
+            <div class="pool-row">
+              <label for="pool-start">랜덤 시작 분류<select id="pool-start"></select></label>
+              <label for="pool-target">랜덤 목표 분류<select id="pool-target"></select></label>
+              <span id="pool-count" class="pool-count"></span>
+            </div>
+            <div class="setup-actions">
+              <button type="button" id="shuffle-btn">랜덤으로 채우기</button>
+              <button type="button" id="start-btn" class="primary">이 문서로 시작</button>
+              <button type="button" id="blind-btn">비공개 랜덤으로 바로 시작</button>
+            </div>
+            </div>
+          </section>
+          <section class="tabpanel" id="run-panel" data-tab="path">
+            <ol id="path" class="path"></ol>
+            <div class="run-actions">
+              <button type="button" id="undo-btn">마지막 기록 취소</button>
+              <button type="button" id="giveup-btn" class="danger">포기</button>
+            </div>
+            <p class="hint">자동 기록(북마크)을 쓰면 끝난 뒤 결과 코드 한 번이면 돼요. 스크립트 없이 할 때만 도착한 문서 제목을 하나씩 위 칸에 기록하세요.</p>
+          </section>
+          <section class="tabpanel" data-tab="history">
+            <div class="panel-head">
+              <span class="hint-inline">이 방에서 끝난 라운드</span>
+              <button type="button" id="reset-btn" class="danger small">방 기록 초기화</button>
+            </div>
+            <div id="history"><p class="empty">아직 끝난 라운드가 없어요.</p></div>
+          </section>
+          <section class="tabpanel stats-panel" id="stats-panel" data-tab="stats">
+            <div id="stats"></div>
+          </section>
+        </div>
+      </div>
+      <aside class="room-side">
+        <section class="panel side-board" id="board-panel">
+          <h2>이번 라운드 순위</h2>
+          <div id="board"></div>
+        </section>
+        <section class="chat" id="room-chat" aria-label="방 채팅">
+          <div class="chat-head">방 채팅</div>
+          <ol class="chat-log" id="room-chat-log" aria-live="polite"></ol>
+          <form class="chat-form" id="room-chat-form">
+            <label for="room-chat-input" class="sr">메시지</label>
+            <input id="room-chat-input" maxlength="200" autocomplete="off" placeholder="메시지 입력 (Enter)">
+            <button type="submit" class="small">보내기</button>
+          </form>
+        </section>
+        <button type="button" id="ready-btn" class="ready-btn">준비</button>
+      </aside>
+    </div>
+  </section>
+</div>
+<dialog id="settings-dialog" class="my-dialog settings-dialog" aria-labelledby="settings-title">
+  <div class="my-head">
+    <h2 id="settings-title">설정</h2>
+    <button type="button" id="settings-close" class="small">닫기</button>
+  </div>
+  <div class="settings-body">
     <form class="me" id="name-form">
       <label for="name-input">닉네임</label>
       <input id="name-input" maxlength="16" placeholder="닉네임 입력" autocomplete="off">
-      <button type="submit" id="name-save">저장</button>
-      <button type="button" id="my-btn" class="primary">내 기록</button>
+      <button type="submit" id="name-save" class="primary">저장</button>
     </form>
-  </header>
-
-  <div id="room-bar" class="room-bar" hidden>
-    <span>방 <b id="room-name"></b></span>
-    <button type="button" id="room-copy" class="primary">방 링크 복사</button>
-    <span class="spacer"></span>
-    <label for="room-input" class="sr">새 방 이름</label>
-    <input id="room-input" maxlength="30" placeholder="다른 방 이름" autocomplete="off">
-    <button type="button" id="room-new">이 방으로 이동</button>
+    <div id="settings-install-slot"></div>
   </div>
-  <div id="local-banner" class="banner" hidden>혼자 연습 모드예요. 기록은 이 화면에만 남아요. 친구들과 하려면 claude.ai에서 공유받은 링크로 열어 주세요.</div>
-
-  <section class="stage" aria-live="polite">
-    <div class="stage-meta" id="stage-meta"></div>
-    <div class="route">
-      <a id="start-doc" class="doc-card" target="_blank" rel="noopener"><span class="k">시작 문서</span><span class="v" id="start-v">?</span><span class="go" aria-hidden="true">눌러서 출발 ↗</span></a>
-      <div class="route-arrow" aria-hidden="true"></div>
-      <div id="target-doc" class="doc-card target"><span class="k">목표 문서</span><span class="v" id="target-v">?</span></div>
+</dialog>
+<dialog id="create-dialog" class="my-dialog create-dialog" aria-labelledby="create-title">
+  <form id="create-form">
+    <div class="my-head"><h2 id="create-title">방 만들기</h2><button type="button" id="create-close" class="small">닫기</button></div>
+    <div class="settings-body">
+      <label for="create-name" class="field">방 이름<input id="create-name" maxlength="24" autocomplete="off"></label>
+      <p class="hint">방을 만들면 로비 목록에 바로 나와요. 친구에게 초대 링크를 보내도 돼요.</p>
+      <button type="submit" class="primary big">만들고 들어가기</button>
     </div>
-    <details id="ban-view" class="ban-view" hidden><summary id="ban-summary"></summary><p id="ban-list"></p></details>
-    <div class="clock"><div id="timer" class="timer">00:00.0</div><div id="clock-sub" class="clock-sub"></div></div>
-    <div id="stage-actions" class="stage-actions"></div>
-  </section>
-
-  <div class="grid">
-    <section class="panel" id="run-panel">
-      <h2>내 경로</h2>
-      <form id="log-form">
-        <input id="doc-input" autocomplete="off" placeholder="결과 코드(LR1.…) 또는 도착한 문서 제목" aria-label="결과 코드 또는 도착한 문서">
-        <button type="submit" id="log-btn" class="primary">기록</button>
-      </form>
-      <p class="hint"><b>자동 기록 스크립트</b>를 쓰면 나무위키 화면 구석에 기록판이 뜨고, 완주하면 결과 코드가 복사돼요. 여기에 붙여넣으면 끝이에요. 스크립트 없이 할 때는 도착한 문서 제목이나 주소를 하나씩 기록하세요.</p>
-      <ol id="path" class="path"></ol>
-      <div class="run-actions">
-        <button type="button" id="undo-btn">마지막 기록 취소</button>
-        <button type="button" id="giveup-btn" class="danger">포기</button>
-      </div>
-    </section>
-    <section class="panel" id="board-panel">
-      <h2>이번 라운드 순위</h2>
-      <div id="board"></div>
-    </section>
-  </div>
-
-  <section class="panel" id="setup-panel">
-    <h2>다음 라운드 출제</h2>
-    <div class="setup-grid">
-      <label for="setup-start">시작 문서<input id="setup-start" autocomplete="off" placeholder="예: 김치"></label>
-      <label for="setup-target">목표 문서<input id="setup-target" autocomplete="off" placeholder="예: 블랙홀"></label>
-    </div>
-    <div class="checks">
-      <label for="rule-back"><input type="checkbox" id="rule-back" checked> 뒤로 가기 허용</label>
-      <label for="rule-foot"><input type="checkbox" id="rule-foot"> 각주 속 링크 허용</label>
-    </div>
-    <fieldset class="ban-setup">
-      <legend>금지 문서 <span class="hint-inline">어디로든 이어지는 허브 문서를 막아요. 나무위키 화면에서 해당 링크에 취소선이 그어져요.</span></legend>
-      <div class="checks" id="ban-presets"></div>
-      <div class="ban-more">
-        <label for="ban-custom">직접 추가 <span class="hint-inline">쉼표나 줄바꿈으로 구분</span>
-          <textarea id="ban-custom" rows="2" placeholder="예: 서울특별시, 조선, 인공지능"></textarea></label>
-        <label for="ban-mode">금지 문서에 들어가면
-          <select id="ban-mode"><option value="warn">경고만 붙이기</option><option value="dq">바로 실격</option></select></label>
-      </div>
-    </fieldset>
-    <div class="pool-row">
-      <label for="pool-start">랜덤 시작 분류<select id="pool-start"></select></label>
-      <label for="pool-target">랜덤 목표 분류<select id="pool-target"></select></label>
-      <span id="pool-count" class="pool-count"></span>
-    </div>
-    <div class="setup-actions">
-      <button type="button" id="shuffle-btn">랜덤으로 채우기</button>
-      <button type="button" id="start-btn" class="primary">이 문서로 시작</button>
-      <button type="button" id="blind-btn">비공개 랜덤으로 바로 시작</button>
-    </div>
-  </section>
-
+  </form>
+</dialog>
+<div id="install-home" hidden>
   <section class="panel" id="install-panel">
     <h2>자동 기록 준비</h2>
     <h3 class="opt">방법 1 · 북마크 버튼 <span class="tag">추천 · 설치 없음</span></h3>
@@ -414,19 +686,6 @@ details.hist[open] .hist-top .more{color:var(--muted)}
       <pre id="script-src">불러오는 중…</pre>
     </details>
     <p class="hint">기록판 표시: <span class="tag">뒤로</span> 뒤로 가기 · <span class="tag bad">본문 밖</span> 최근 변경·각주 팝업 등 본문 밖 링크 · <span class="tag bad">링크 없이 이동</span> 검색·주소창·랜덤 문서. 표시는 참고용이고, 판정은 친구들끼리 해요.</p>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head">
-      <h2>지난 라운드</h2>
-      <button type="button" id="reset-btn" class="danger small">방 기록 초기화</button>
-    </div>
-    <div id="history"><p class="empty">아직 끝난 라운드가 없어요.</p></div>
-  </section>
-
-  <section class="panel stats-panel" id="stats-panel" hidden>
-    <h2>대전 기록</h2>
-    <div id="stats"></div>
   </section>
 </div>
 <dialog id="my-dialog" class="my-dialog" aria-labelledby="my-title">
@@ -935,28 +1194,41 @@ const mine = () => roundPlayers().find(p => p.id === me.id) || null;
 const isCounting = () => G().status === "running" && now() < G().startAt;
 const isLive = () => G().status === "running" && now() >= G().startAt;
 
-/* ---------- local fallback store ---------- */
+/* ---------- local fallback store (혼자 연습 모드) ---------- */
 function makeLocalDb(){
   const docs = new Map(), subs = new Set();
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const isObj = v => v && typeof v === "object" && !Array.isArray(v);
+  const deep = (a, b) => { const o = { ...(a || {}) }; for (const [k, v] of Object.entries(b)) o[k] = isObj(v) && isObj(o[k]) ? deep(o[k], v) : v; return o; };
+  const rid = () => Math.random().toString(36).slice(2, 12);
   const snap = p => { const d = docs.get(p); return { id: p.split("/").pop(), exists: !!d, data: () => d, metadata: {} }; };
   const notify = () => subs.forEach(f => f());
-  const clone = o => JSON.parse(JSON.stringify(o));
   const doc = p => ({
     path: p, id: p.split("/").pop(),
     get: async () => snap(p),
-    set: async d => { docs.set(p, clone(d)); notify(); },
-    update: async d => { const c = docs.get(p); if (!c) throw { code: "invalid_argument" }; docs.set(p, { ...c, ...clone(d) }); notify(); },
+    set: async (d, opt) => { docs.set(p, opt && opt.merge ? deep(docs.get(p), clone(d)) : clone(d)); notify(); },
+    update: async d => { const c = docs.get(p); if (!c) throw { code: "invalid_argument" }; docs.set(p, deep(c, clone(d))); notify(); },
     delete: async () => { docs.delete(p); notify(); },
     onSnapshot(next){ const f = () => next(snap(p)); subs.add(f); setTimeout(f); return () => subs.delete(f); }
   });
-  const collection = cp => ({
-    path: cp, doc: id => doc(cp + "/" + id),
-    onSnapshot(next){
+  const query = (cp, ord, lim) => {
+    const run = () => {
       const depth = cp.split("/").length + 1;
-      const f = () => { const ds = [...docs.keys()].filter(k => k.startsWith(cp + "/") && k.split("/").length === depth).sort().map(snap); next({ docs: ds, size: ds.length, empty: !ds.length }); };
-      subs.add(f); setTimeout(f); return () => subs.delete(f);
-    }
-  });
+      let ds = [...docs.keys()].filter(k => k.startsWith(cp + "/") && k.split("/").length === depth).sort().map(snap);
+      if (ord) { const [f, dir] = ord; ds.sort((a, b) => ((a.data()[f] ?? 0) - (b.data()[f] ?? 0)) * (dir === "desc" ? -1 : 1)); }
+      if (lim) ds = ds.slice(0, lim);
+      return { docs: ds, size: ds.length, empty: !ds.length };
+    };
+    return {
+      orderBy: (f, dir) => query(cp, [f, dir || "asc"], lim),
+      limit: n => query(cp, ord, n),
+      get: async () => run(),
+      onSnapshot(next){ const f = () => next(run()); subs.add(f); setTimeout(f); return () => subs.delete(f); }
+    };
+  };
+  const collection = cp => ({ ...query(cp), path: cp,
+    doc: id => doc(cp + "/" + (id || rid())),
+    add: async d => { const r = doc(cp + "/" + rid()); await r.set(d); return r; } });
   return { doc, collection };
 }
 
@@ -1024,6 +1296,7 @@ function giveUp(){
 }
 function startRound(start, target, blind){
   if (needName()) return;
+  if (!isHost()) { toast("방장만 라운드를 시작할 수 있어요."); return; }
   start = parseTitle(start); target = parseTitle(target);
   if (!start || !target) { toast("시작 문서와 목표 문서를 모두 입력해 주세요."); return; }
   if (norm(start) === norm(target)) { toast("시작과 목표가 같은 문서예요."); return; }
@@ -1036,9 +1309,11 @@ function startRound(start, target, blind){
     since: SINCE()   // 방 기록 초기화 시점을 이어받아요 (빠뜨리면 초기화가 풀려요)
   };
   queue(() => db.doc("game/state").set(next));
+  updateMeta({ status: "running", round: dispRound(next.round), ban: ban ? banLabel(ban) + (ban.mode === "dq" ? " · 실격" : "") : "" });
   $("#setup-start").value = ""; $("#setup-target").value = "";
 }
 function endRound(){
+  if (!isHost()) { toast("방장만 라운드를 끝낼 수 있어요."); return; }
   if (!armedEnd) { armedEnd = true; render(); setTimeout(()=>{ armedEnd = false; render(); }, 3000); return; }
   armedEnd = false;
   const g = G();
@@ -1050,12 +1325,14 @@ function endRound(){
     await db.doc("history/r" + g.round).set({ round: g.round, start: g.start, target: g.target, rules: g.rules || {}, startAt: g.startAt, endedAt: now(), results });
     await db.doc("game/state").update({ status: "ended", endedAt: now() });
   });
+  updateMeta({ status: "ended" });
 }
 function saveName(){
   const v = $("#name-input").value.trim().slice(0,16);
   if (!v) { toast("닉네임을 입력해 주세요."); return; }
   me.name = v; lsSet("linkrun.name", v);
-  if (mine()) queue(() => myRef().update({ name: v }));
+  if (db && mine()) queue(() => myRef().update({ name: v }));
+  writePresence(); renderLobby(); renderRoomChrome();
   toast("닉네임을 '" + v + "'(으)로 저장했어요.");
   render();
 }
@@ -1139,7 +1416,7 @@ function renderStage(){
       if (p.finishedMs == null && !p.gaveUp && !dq) acts.append(h("a", { href: startLink(g), target: "_blank", rel: "noopener", class: "note" }, "시작 문서 다시 열기 ↗"));
     }
     acts.append(h("span", { class: "spacer" }));
-    acts.append(h("button", { class: "danger" + (armedEnd ? " armed" : ""), onclick: endRound }, armedEnd ? "한 번 더 누르면 종료" : "라운드 끝내기"));
+    if (isHost()) acts.append(h("button", { class: "danger" + (armedEnd ? " armed" : ""), onclick: endRound }, armedEnd ? "한 번 더 누르면 종료" : "라운드 끝내기"));
   } else if (g.status === "ended") {
     acts.append(h("span", { class: "note" }, "결과와 모든 경로가 공개됐어요. 아래에서 다음 라운드를 출제하세요."));
   }
@@ -1164,6 +1441,7 @@ function renderRun(){
   const out = !!p && (p.finishedMs != null || p.gaveUp || isDq(p, g.rules));
   const canLog = !!p && isLive() && !out;
   const canInput = isLive() && !out;
+  $("#log-form").hidden = G().status !== "running";
   $("#doc-input").disabled = !canInput; $("#log-btn").disabled = !canInput;
   $("#undo-btn").disabled = !canLog || !p.path.length;
   const gu = $("#giveup-btn"); gu.disabled = !canLog;
@@ -1204,8 +1482,12 @@ function renderBoard(){
 }
 
 function renderSetup(){
-  const g = G();
-  $("#setup-panel").hidden = g.status === "running";
+  const g = G(), host = isHost();
+  const note = !host ? "방장 " + (nameOf(hostOf(ROOM)) || "") + "님이 출제해요. 오른쪽 아래 ‘준비’를 누르고 기다려 주세요."
+    : g.status === "running" ? "라운드가 진행 중이에요. 끝나면 다음 판을 출제할 수 있어요." : "";
+  $("#setup-note").textContent = note;
+  $("#setup-note").hidden = !note;
+  $("#setup-body").hidden = !!note;
 }
 
 /* ---------- 지난 라운드 & 대전 기록 ---------- */
@@ -1293,11 +1575,10 @@ function niceStep(max, n){
 const fmtShort = ms => { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
 function renderStats(list){
-  const panel = $("#stats-panel"), body = $("#stats");
+  const body = $("#stats");
   const { rounds, people } = seasonStats(list);
-  panel.hidden = !rounds.length;
   body.replaceChildren();
-  if (!rounds.length) return;
+  if (!rounds.length) { body.append(h("p", { class: "empty" }, "끝난 라운드가 쌓이면 여기에 대전 기록이 보여요.")); return; }
 
   // 한눈에: 요약 숫자 4개
   const finishes = people.flatMap(p => p.pts.map(pt => ({ ...pt, name: p.name })));
@@ -1520,25 +1801,29 @@ $("#my-scope-all").addEventListener("click", () => { myScope = "all"; renderMySt
 let armedReset = false;
 function renderResetBtn(){
   const b = $("#reset-btn"), g = G();
+  b.hidden = !isHost();
   b.disabled = g.status === "running";
   b.title = b.disabled ? "라운드가 끝난 뒤에 초기화할 수 있어요" : "";
   b.classList.toggle("armed", armedReset);
   b.textContent = armedReset ? "한 번 더 누르면 초기화" : "방 기록 초기화";
 }
 function resetRoom(){
+  if (!isHost()) { toast("방장만 방 기록을 초기화할 수 있어요."); return; }
   const g = G();
   if (g.status === "running") { toast("라운드가 끝난 뒤에 초기화할 수 있어요."); return; }
   if (!seasonHistory().length && !(g.round > SINCE())) { toast("초기화할 기록이 없어요."); return; }
   if (!armedReset) { armedReset = true; renderResetBtn(); setTimeout(() => { armedReset = false; renderResetBtn(); }, 3000); return; }
   armedReset = false;
   queue(() => db.doc("game/state").set({ ...g, status: "lobby", since: g.round, resetAt: now(), resetBy: me.name || "" }));
+  updateMeta({ status: "lobby", round: 0 });
   toast("방 기록을 초기화했어요. 다음 판은 1라운드부터 시작해요.");
 }
 
 function render(){
   $("#local-banner").hidden = !isLocal;
+  if (!db) return;
   if (document.activeElement !== $("#name-input")) $("#name-input").value = me.name;
-  renderStage(); renderRun(); renderBoard(); renderSetup(); renderHistory(); renderResetBtn(); renderMyStats();
+  renderStage(); renderRun(); renderBoard(); renderSetup(); renderHistory(); renderResetBtn(); renderMyStats(); renderRoomChrome();
 }
 $("#reset-btn").addEventListener("click", resetRoom);
 
@@ -1643,54 +1928,355 @@ setInterval(() => {
   else renderClock();
 }, 100);
 
+/* ═════════ 저장소 · 화면 전환 · 로비 · 접속 · 채팅 ═════════
+   저장 구조 (사이트 = Firestore, claude.ai = db, 혼자 연습 = 가짜 저장소, 모두 같은 경로)
+   - lobby/<방id>        방 정보: no, name, hostId, hostName, createdAt, status, round, ban, solo
+   - presence/<pid>      접속 상태: n(닉네임), t(마지막 신호 시각), room(있는 방), r(준비), j(방에 들어온 시각)
+   - lobbychat/<id>      로비 채팅: pid, n, text, t
+   - rooms/<방id>/game|players|history|chat   방 안의 게임 기록과 방 채팅 */
+const SITE = typeof window.LINKRUN_FIREBASE !== "undefined";
+const FRESH = 75000, BEAT = 30000, MAX_SLOTS = 8, PAGE = 6;
+let base = null, ROOM = null, roomUnsubs = [];
+let lobbyRooms = [], presence = [], lobbyReady = false;
+let joinedAt = 0, ready = false, lastStatus = null, lobbyPage = 0, lobbyFilter = "all";
+let activeTab = lsGet("linkrun.tab") || "setup";
+
+const cleanRoomId = s => { let v = s || ""; try { v = decodeURIComponent(v); } catch {} return v.replace(/[^0-9A-Za-z가-힣_-]/g, "").slice(0, 40); };
+function roomDb(store, room){
+  const b = "rooms/" + room + "/";
+  return { doc: p => store.doc(b + p), collection: p => store.collection(b + p) };
+}
+/* 문서 일부만 합쳐 쓰기. Firestore·가짜 저장소는 merge 옵션, claude.ai db는 update(중첩 병합) */
+async function mergeSet(ref, data){
+  if (SITE || isLocal) return ref.set(data, { merge: true });
+  const snap = await ref.get();
+  return snap.exists ? ref.update(data) : ref.set(data);
+}
+function updateMeta(data){
+  if (!base || !ROOM) return;
+  mergeSet(base.doc("lobby/" + ROOM), { ...data, updatedAt: now() }).catch(e => console.warn(e));
+}
+
+/* ---------- 접속 상태 ---------- */
+const fresh = p => !!p.t && now() - p.t < FRESH;
+const online = () => presence.filter(fresh);
+function membersOf(id){
+  const m = online().filter(p => p.room === id);
+  if (id === ROOM && !m.some(p => p.id === me.id)) m.push({ id: me.id, n: me.name, room: id, r: ready, j: joinedAt, t: now() });
+  return m.sort((a, b) => (a.j || 0) - (b.j || 0));
+}
+const metaOf = id => lobbyRooms.find(r => r.id === id) || null;
+/* 방장: 방을 만든 사람이 있으면 그 사람, 나갔으면 가장 먼저 들어온 사람 */
+function hostOf(id){
+  if (!id) return me.id;
+  const m = membersOf(id), meta = metaOf(id);
+  if (meta && m.some(p => p.id === meta.hostId)) return meta.hostId;
+  return m.length ? m[0].id : (meta ? meta.hostId : me.id);
+}
+const isHost = () => !ROOM || hostOf(ROOM) === me.id;
+const nameOf = id => { if (id === me.id) return me.name; const p = presence.find(x => x.id === id); return p ? p.n : (metaOf(ROOM) || {}).hostName || ""; };
+function writePresence(){
+  if (!base) return;
+  base.doc("presence/" + me.id).set({ n: me.name || "", t: now(), room: ROOM || null, r: !!ready, j: joinedAt || 0 }).catch(e => console.warn(e));
+}
+function colorFor(id){
+  let x = 0; for (const c of String(id)) x = (x * 31 + c.charCodeAt(0)) >>> 0;
+  return "var(--s" + (x % 8 + 1) + ")";
+}
+const avatar = (id, name, cls) => h("span", { class: "avatar " + (cls || ""), style: "background:" + colorFor(id), "aria-hidden": "true" }, (name || "?").trim().slice(0, 1));
+
+/* ---------- 채팅 ---------- */
+let lastSent = 0;
+function watchChat(col, pre){
+  return col.orderBy("t", "desc").limit(60).onSnapshot(q => renderChat(pre, q.docs.map(d => ({ id: d.id, ...d.data() })).reverse()),
+    e => console.warn(e));
+}
+function renderChat(pre, msgs){
+  const log = $("#" + pre + "-chat-log");
+  const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  log.replaceChildren(...(msgs.length ? msgs.map(m => {
+    const t = new Date(m.t || 0);
+    return h("li", { class: m.pid === me.id ? "mine" : null },
+      h("span", { class: "ct" }, String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0")),
+      h("b", { style: "color:" + colorFor(m.pid) }, m.n || "이름 없음"),
+      h("span", { class: "cm" }, String(m.text || "")));
+  }) : [h("li", { class: "chat-empty" }, "아직 대화가 없어요. 먼저 인사해 보세요.")]));
+  if (atBottom) log.scrollTop = log.scrollHeight;
+}
+function sendChat(pre, col){
+  const input = $("#" + pre + "-chat-input");
+  const text = input.value.trim().slice(0, 200);
+  if (!text || !col) return;
+  if (now() - lastSent < 800) { toast("조금 천천히 보내 주세요."); return; }
+  lastSent = now(); input.value = "";
+  col.add({ pid: me.id, n: me.name || "", text, t: now() }).catch(onWriteErr);
+}
+$("#lobby-chat-form").addEventListener("submit", e => { e.preventDefault(); sendChat("lobby", base && base.collection("lobbychat")); });
+$("#room-chat-form").addEventListener("submit", e => { e.preventDefault(); sendChat("room", db && db.collection("chat")); });
+
+/* ---------- 화면 ---------- */
+const onboarded = () => !!me.name && lsGet("linkrun.onboarded") === "1";
+function showView(v){
+  for (const k of ["entry", "lobby", "room"]) $("#view-" + k).hidden = k !== v;
+  document.body.dataset.view = v;
+}
+function placeInstall(slot){ $(slot).append($("#install-panel")); }
+function go(id){
+  const target = "#" + (id || "");
+  if (location.hash === target || (!id && !location.hash)) route();
+  else location.hash = id || "";
+}
+function route(){
+  if (!base) return;
+  const id = cleanRoomId(location.hash.slice(1));
+  if (!onboarded()) { showEntry(); return; }
+  if (id) enterRoom(id); else showLobby();
+}
+
+/* ① 입장 */
+function showEntry(){
+  showView("entry");
+  $("#entry-name").value = me.name || "";
+  const step2 = !!me.name && lsGet("linkrun.entry-step") === "2";
+  $("#entry-name-form").hidden = step2; $("#entry-step2").hidden = !step2;
+  $("#es-1").classList.toggle("on", !step2); $("#es-2").classList.toggle("on", step2);
+  if (step2) placeInstall("#entry-install-slot"); else $("#entry-name").focus();
+}
+$("#entry-name-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("#entry-name").value.trim().slice(0, 16);
+  if (!v) { toast("닉네임을 입력해 주세요."); return; }
+  me.name = v; lsSet("linkrun.name", v); lsSet("linkrun.entry-step", "2");
+  showEntry();
+});
+const finishEntry = () => { lsSet("linkrun.onboarded", "1"); writePresence(); route(); };
+$("#entry-done").addEventListener("click", finishEntry);
+$("#entry-skip").addEventListener("click", () => { toast("북마크는 언제든 ‘설정’에서 만들 수 있어요."); finishEntry(); });
+
+/* ② 로비 */
+function showLobby(){
+  stopRoom();
+  showView("lobby");
+  document.title = "나무위키링크스피드런";
+  writePresence(); renderLobby();
+}
+function visibleRooms(){
+  return lobbyRooms
+    .filter(r => !r.solo && (membersOf(r.id).length > 0 || now() - (r.createdAt || 0) < 10 * 60000))
+    .filter(r => lobbyFilter === "all" || r.status !== "running")
+    .sort((a, b) => (a.no || 0) - (b.no || 0));
+}
+const statusLabel = r => r && r.status === "running" ? "게임 중" + (r.round ? " · " + r.round + "R" : "") : "대기 중";
+function renderLobby(){
+  if ($("#view-lobby").hidden) return;
+  $("#lobby-avatar").replaceChildren(avatar(me.id, me.name, "xl"));
+  $("#lobby-name").textContent = me.name || "이름 없음";
+
+  const people = online().sort((a, b) => (b.id === me.id) - (a.id === me.id) || (a.n || "").localeCompare(b.n || ""));
+  if (!people.some(p => p.id === me.id)) people.unshift({ id: me.id, n: me.name, room: null });
+  $("#online-count").textContent = people.length + "명";
+  $("#online-list").replaceChildren(...people.map(p => {
+    const meta = p.room ? metaOf(p.room) : null;
+    const where = !p.room ? "로비" : meta && meta.solo ? "혼자 연습 중" : meta ? "#" + String(meta.no || 0).padStart(3, "0") + " " + (meta.name || "") + (meta.status === "running" ? " · 게임 중" : "") : "방에 있어요";
+    return h("li", { class: p.id === me.id ? "me" : null }, avatar(p.id, p.n), h("span", { class: "on-name" }, p.n || "이름 없음"), h("span", { class: "on-where" }, where));
+  }));
+
+  const rooms = visibleRooms();
+  const pages = Math.max(1, Math.ceil(rooms.length / PAGE));
+  lobbyPage = Math.min(lobbyPage, pages - 1);
+  const slice = rooms.slice(lobbyPage * PAGE, lobbyPage * PAGE + PAGE);
+  const cards = slice.map(r => {
+    const m = membersOf(r.id), full = m.length >= MAX_SLOTS;
+    return h("button", { type: "button", class: "room-card" + (r.status === "running" ? " playing" : "") + (full ? " full" : ""),
+        onclick: () => { if (full && !m.some(p => p.id === me.id)) { toast("방이 가득 찼어요. (최대 " + MAX_SLOTS + "명)"); return; } go(r.id); } },
+      h("span", { class: "rc-top" }, h("span", { class: "rc-no" }, String(r.no || 0).padStart(3, "0")),
+        h("span", { class: "rc-status" }, statusLabel(r)), r.ban ? h("span", { class: "rc-ban", title: "금지 문서: " + r.ban }, "금지 모드") : null),
+      h("span", { class: "rc-name" }, r.name || r.id),
+      h("span", { class: "rc-host" }, "방장 " + (r.hostName || "")),
+      h("span", { class: "rc-bottom" }, h("span", { class: "rc-people" }, m.slice(0, MAX_SLOTS).map(p => avatar(p.id, p.n, "sm"))),
+        h("b", { class: "rc-count" }, m.length + "/" + MAX_SLOTS)));
+  });
+  for (let k = cards.length; k < PAGE; k++) cards.push(h("div", { class: "room-card empty" + (k === cards.length && !rooms.length ? " hint" : "") },
+    k === 0 && !rooms.length ? (lobbyFilter === "all" ? "열린 방이 없어요. ‘방 만들기’로 첫 방을 열어 보세요." : "대기 중인 방이 없어요.") : ""));
+  $("#room-cards").replaceChildren(...cards);
+  $("#page-label").textContent = (lobbyPage + 1) + " / " + pages;
+  $("#page-prev").disabled = lobbyPage === 0;
+  $("#page-next").disabled = lobbyPage >= pages - 1;
+}
+$("#page-prev").addEventListener("click", () => { lobbyPage = Math.max(0, lobbyPage - 1); renderLobby(); });
+$("#page-next").addEventListener("click", () => { lobbyPage++; renderLobby(); });
+for (const [id, f] of [["#filter-all", "all"], ["#filter-wait", "wait"]]) $(id).addEventListener("click", () => {
+  lobbyFilter = f; lobbyPage = 0;
+  $("#filter-all").classList.toggle("on", f === "all"); $("#filter-wait").classList.toggle("on", f === "wait");
+  renderLobby();
+});
+async function createRoom(name){
+  const id = "r" + Math.random().toString(36).slice(2, 8);
+  const no = Math.max(0, ...lobbyRooms.map(r => r.no || 0)) + 1;
+  try {
+    await base.doc("lobby/" + id).set({ no, name: name.slice(0, 24), hostId: me.id, hostName: me.name || "", createdAt: now(), updatedAt: now(), status: "lobby", round: 0, ban: "" });
+  } catch (e) { onWriteErr(e); return; }
+  go(id);
+}
+$("#create-room-btn").addEventListener("click", () => {
+  $("#create-name").value = (me.name || "나") + "의 방";
+  $("#create-dialog").showModal(); $("#create-name").select();
+});
+$("#create-close").addEventListener("click", () => $("#create-dialog").close());
+$("#create-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const n = $("#create-name").value.trim();
+  if (!n) { toast("방 이름을 입력해 주세요."); return; }
+  $("#create-dialog").close(); createRoom(n);
+});
+$("#quick-btn").addEventListener("click", () => {
+  const open = visibleRooms().filter(r => r.status !== "running" && membersOf(r.id).length > 0 && membersOf(r.id).length < MAX_SLOTS)
+    .sort((a, b) => membersOf(b.id).length - membersOf(a.id).length);
+  if (open.length) go(open[0].id); else { toast("들어갈 방이 없어서 새 방을 만들었어요."); createRoom((me.name || "나") + "의 방"); }
+});
+$("#solo-btn").addEventListener("click", () => go("solo-" + me.id.slice(1, 9)));
+$("#code-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("#code-input").value.trim();
+  const id = cleanRoomId(v.includes("#") ? v.split("#").pop() : v);
+  if (!id) { toast("방 코드를 입력해 주세요."); return; }
+  $("#code-input").value = ""; go(id);
+});
+
+/* ③ 방 */
+function stopRoom(){
+  roomUnsubs.forEach(u => { try { u(); } catch {} });
+  roomUnsubs = [];
+  ROOM = null; db = null; state = null; players = []; history = [];
+  ready = false; lastStatus = null;
+}
+function enterRoom(id){
+  if (ROOM === id && !$("#view-room").hidden) return;
+  stopRoom();
+  ROOM = id; joinedAt = now();
+  historyKey = ""; myKey = ""; openRounds.clear();
+  armedEnd = armedReset = armedGiveUp = false;
+  db = roomDb(base, id);
+  showView("room");
+  $("#room-chat-log").replaceChildren();
+  subscribe();
+  roomUnsubs.push(watchChat(db.collection("chat"), "room"));
+  // 주소로 바로 들어온 방(예전 방 포함)도 로비 목록에 나오게 방 정보를 만들어요
+  base.doc("lobby/" + id).get().then(snap => {
+    if (snap.exists || ROOM !== id) return;
+    const solo = id.startsWith("solo-");
+    return base.doc("lobby/" + id).set({ no: solo ? 0 : Math.max(0, ...lobbyRooms.map(r => r.no || 0)) + 1, name: solo ? "혼자 연습" : id,
+      hostId: me.id, hostName: me.name || "", createdAt: now(), updatedAt: now(), status: "lobby", round: 0, ban: "", solo });
+  }).catch(e => console.warn(e));
+  writePresence(); setTab(activeTab); render(); renderRoomChrome();
+}
 function subscribe(){
   const err = e => { console.warn(e); toast("실시간 연결이 끊겼어요. 새로고침해 주세요."); };
-  db.doc("game/state").onSnapshot(s => { state = s.exists ? s.data() : null; armedEnd = false; render(); }, err);
-  db.collection("players").onSnapshot(q => { players = q.docs.map(d => ({ id: d.id, ...d.data(), path: (d.data().path || []) })); render(); }, err);
-  db.collection("history").onSnapshot(q => { history = q.docs.map(d => d.data()).sort((a,b) => b.round - a.round); render(); }, err);
+  roomUnsubs.push(
+    db.doc("game/state").onSnapshot(s => { state = s.exists ? s.data() : null; armedEnd = false; render(); }, err),
+    db.collection("players").onSnapshot(q => { players = q.docs.map(d => ({ id: d.id, ...d.data(), path: (d.data().path || []) })); render(); }, err),
+    db.collection("history").onSnapshot(q => { history = q.docs.map(d => d.data()).sort((a, b) => b.round - a.round); render(); }, err));
 }
+$("#leave-btn").addEventListener("click", () => go(""));
+$("#room-copy").addEventListener("click", () => {
+  const url = location.href.split("#")[0] + "#" + ROOM;
+  copyText(url, () => toast(url), "초대 링크를 복사했어요. 친구에게 보내세요.");
+});
+function renderRoomChrome(){
+  if (!ROOM || $("#view-room").hidden) return;
+  const meta = metaOf(ROOM) || {}, g = G(), host = hostOf(ROOM), running = g.status === "running";
+  // 라운드가 시작하거나 끝나면 준비 표시를 풀어요 (상태가 바뀐 그 한 번만)
+  if (lastStatus && lastStatus !== g.status && ready) { ready = false; writePresence(); }
+  lastStatus = g.status;
+  $("#room-no").textContent = meta.solo ? "연습" : "#" + String(meta.no || 0).padStart(3, "0");
+  $("#room-title").textContent = meta.name || ROOM;
+  $("#room-status").textContent = statusLabel({ status: g.status, round: running ? dispRound(g.round) : 0 });
+  $("#room-status").className = "room-status" + (running ? " playing" : "");
+  document.title = (meta.name || ROOM) + " · 나무위키링크스피드런";
 
-/* 사이트 버전(docs/index.html)은 firebase-config.js가 LINKRUN_FIREBASE를 정해요.
-   방은 주소 끝의 #방이름 으로 나뉘어요. 없으면 main. */
-const SITE = typeof window.LINKRUN_FIREBASE !== "undefined";
-const ROOM = (decodeURIComponent(location.hash.slice(1)).replace(/[^0-9A-Za-z가-힣_-]/g, "").slice(0, 30)) || "main";
-function roomDb(fs){
-  const base = "rooms/" + ROOM + "/";
-  return { doc: p => fs.doc(base + p), collection: p => fs.collection(base + p) };
-}
-function setupSiteUi(){
-  const bar = $("#room-bar"); bar.hidden = false;
-  $("#room-name").textContent = ROOM;
-  $("#room-copy").addEventListener("click", () => {
-    const url = location.href.split("#")[0] + "#" + encodeURIComponent(ROOM);
-    copyText(url, () => toast(url), "방 링크를 복사했어요. 친구에게 보내세요.");
-  });
-  $("#room-new").addEventListener("click", () => {
-    const n = $("#room-input").value.replace(/[^0-9A-Za-z가-힣_-]/g, "").slice(0, 30);
-    if (!n) { toast("방 이름은 한글·영문·숫자·-·_ 로 입력해 주세요."); return; }
-    location.hash = encodeURIComponent(n); location.reload();
-  });
-  $("#local-banner").textContent = "Firebase 설정이 아직 없어서 혼자 연습 모드예요. firebase-config.js를 채운 뒤 다시 올려 주세요.";
-}
-window.addEventListener("hashchange", () => { if (SITE) location.reload(); });
+  const m = membersOf(ROOM), round = roundPlayers();
+  const slots = [];
+  for (let k = 0; k < MAX_SLOTS; k++) {
+    const p = m[k];
+    if (!p) { slots.push(h("div", { class: "slot empty" }, h("span", { class: "slot-no" }, k + 1), "빈 자리")); continue; }
+    const rp = round.find(x => x.id === p.id);
+    const st = running ? (rp ? statusOf(rp) : { cls: "", label: "관전" }) : p.id === host ? { cls: "host", label: "방장" } : p.r ? { cls: "ready", label: "준비" } : { cls: "", label: "대기" };
+    slots.push(h("div", { class: "slot" + (p.id === me.id ? " me" : "") + (p.r && !running ? " is-ready" : "") },
+      h("span", { class: "slot-no" }, k + 1),
+      p.id === host ? h("span", { class: "crown", title: "방장" }, "♛") : null,
+      avatar(p.id, p.n, "lg"),
+      h("span", { class: "slot-name" }, p.n || "이름 없음"),
+      h("span", { class: "pill " + st.cls }, running && rp ? st.label + " · " + rp.path.length + "클릭" : st.label)));
+  }
+  $("#slots").replaceChildren(...slots);
 
-render();
+  const rb = $("#ready-btn"), others = m.filter(p => p.id !== host), nReady = others.filter(p => p.r).length;
+  rb.disabled = running;
+  rb.classList.toggle("on", !running && ready && !isHost());
+  rb.replaceChildren(...(running ? [h("b", {}, "게임 중")]
+    : isHost() ? [h("b", {}, "게임 시작"), h("small", {}, others.length ? "준비 " + nReady + "/" + others.length : "혼자서도 시작할 수 있어요")]
+    : [h("b", {}, ready ? "준비 완료" : "준비"), h("small", {}, ready ? "다시 누르면 취소" : "방장이 시작하면 바로 출발")]));
+  renderSetup();
+  $("#tab-setup").textContent = isHost() ? "출제" : "출제 (방장)";
+}
+$("#ready-btn").addEventListener("click", () => {
+  if (G().status === "running") return;
+  if (isHost()) {
+    const a = $("#setup-start").value.trim(), b = $("#setup-target").value.trim();
+    if (a && b) startRound(a, b, false);
+    else { const [x, y] = pick2(); startRound(x, y, true); toast("출제 칸이 비어 있어서 비공개 랜덤으로 시작했어요."); }
+    return;
+  }
+  ready = !ready; writePresence(); renderRoomChrome();
+});
+function setTab(t){
+  if (!document.querySelector('.tabpanel[data-tab="' + t + '"]')) t = "setup";
+  activeTab = t; lsSet("linkrun.tab", t);
+  for (const b of document.querySelectorAll('.tabs [role="tab"]')) { const on = b.dataset.tab === t; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); }
+  for (const s of document.querySelectorAll(".tabpanel")) s.hidden = s.dataset.tab !== t;
+}
+for (const b of document.querySelectorAll('.tabs [role="tab"]')) b.addEventListener("click", () => setTab(b.dataset.tab));
+
+/* 설정 창 */
+for (const b of document.querySelectorAll(".open-settings")) b.addEventListener("click", () => {
+  placeInstall("#settings-install-slot");
+  $("#name-input").value = me.name || "";
+  $("#settings-dialog").showModal();
+});
+$("#settings-close").addEventListener("click", () => $("#settings-dialog").close());
+for (const d of ["#settings-dialog", "#create-dialog"]) $(d).addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+
+/* ---------- 시작 ---------- */
+function startGlobal(){
+  base.collection("lobby").onSnapshot(q => { lobbyRooms = q.docs.map(d => ({ id: d.id, ...d.data() })); lobbyReady = true; renderLobby(); renderRoomChrome(); }, e => console.warn(e));
+  base.collection("presence").onSnapshot(q => { presence = q.docs.map(d => ({ id: d.id, ...d.data() })); renderLobby(); renderRoomChrome(); }, e => console.warn(e));
+  watchChat(base.collection("lobbychat"), "lobby");
+  setInterval(() => { if (onboarded()) writePresence(); }, BEAT);
+  setInterval(() => { renderLobby(); renderRoomChrome(); }, 15000);   // 오래된 접속 표시 정리
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && onboarded()) writePresence(); });
+  window.addEventListener("pagehide", () => { if (base) base.doc("presence/" + me.id).set({ n: me.name || "", t: 0, room: null, r: false, j: 0 }).catch(() => {}); });
+}
+window.addEventListener("hashchange", route);
+
 (async () => {
   let real = null;
   if (SITE) {
-    setupSiteUi();
     try {
       if (window.LINKRUN_FIREBASE && window.firebase) {
         if (!firebase.apps.length) firebase.initializeApp(window.LINKRUN_FIREBASE);
-        real = roomDb(firebase.firestore());
+        real = firebase.firestore();
       }
     } catch (e) { console.warn(e); real = null; }
+    if (!real) $("#local-banner").textContent = "Firebase 설정이 아직 없어서 혼자 연습 모드예요. firebase-config.js를 채운 뒤 다시 올려 주세요.";
   } else {
     try { real = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { real = null; }
+    if (!real) $("#local-banner").textContent = "혼자 연습 모드예요. 기록은 이 화면에만 남아요. 친구들과 하려면 공유받은 링크로 열어 주세요.";
   }
-  db = real || makeLocalDb(); isLocal = !real;
-  subscribe(); render();
+  base = real || makeLocalDb(); isLocal = !real;
+  $("#local-banner").hidden = !isLocal;
+  startGlobal(); route();
 })();
+
 </script>
 
 </body>
