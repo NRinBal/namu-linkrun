@@ -1483,7 +1483,7 @@ function renderBoard(){
 
 function renderSetup(){
   const g = G(), host = isHost();
-  const note = !host ? "방장 " + (nameOf(hostOf(ROOM)) || "") + "님이 출제해요. 오른쪽 아래 ‘준비’를 누르고 기다려 주세요."
+  const note = !host ? "방장 " + (nameOf(hostOf(ROOM)) || (metaOf(ROOM) || {}).hostName || "") + "님이 출제해요. 오른쪽 아래 ‘준비’를 누르고 기다려 주세요."
     : g.status === "running" ? "라운드가 진행 중이에요. 끝나면 다음 판을 출제할 수 있어요." : "";
   $("#setup-note").textContent = note;
   $("#setup-note").hidden = !note;
@@ -1938,7 +1938,7 @@ const SITE = typeof window.LINKRUN_FIREBASE !== "undefined";
 const FRESH = 75000, BEAT = 30000, MAX_SLOTS = 8, PAGE = 6;
 let base = null, ROOM = null, roomUnsubs = [];
 let lobbyRooms = [], presence = [], lobbyReady = false;
-let joinedAt = 0, ready = false, lastStatus = null, lobbyPage = 0, lobbyFilter = "all";
+let joinedAt = 0, ready = false, lastStatus = null, lastHost = null, lobbyPage = 0, lobbyFilter = "all";
 let activeTab = lsGet("linkrun.tab") || "setup";
 
 const cleanRoomId = s => { let v = s || ""; try { v = decodeURIComponent(v); } catch {} return v.replace(/[^0-9A-Za-z가-힣_-]/g, "").slice(0, 40); };
@@ -1974,7 +1974,7 @@ function hostOf(id){
   return m.length ? m[0].id : (meta ? meta.hostId : me.id);
 }
 const isHost = () => !ROOM || hostOf(ROOM) === me.id;
-const nameOf = id => { if (id === me.id) return me.name; const p = presence.find(x => x.id === id); return p ? p.n : (metaOf(ROOM) || {}).hostName || ""; };
+const nameOf = id => { if (id === me.id) return me.name; const p = presence.find(x => x.id === id); return p ? p.n : ""; };
 function writePresence(){
   if (!base) return;
   base.doc("presence/" + me.id).set({ n: me.name || "", t: now(), room: ROOM || null, r: !!ready, j: joinedAt || 0 }).catch(e => console.warn(e));
@@ -2092,7 +2092,7 @@ function renderLobby(){
       h("span", { class: "rc-top" }, h("span", { class: "rc-no" }, String(r.no || 0).padStart(3, "0")),
         h("span", { class: "rc-status" }, statusLabel(r)), r.ban ? h("span", { class: "rc-ban", title: "금지 문서: " + r.ban }, "금지 모드") : null),
       h("span", { class: "rc-name" }, r.name || r.id),
-      h("span", { class: "rc-host" }, "방장 " + (r.hostName || "")),
+      h("span", { class: "rc-host" }, "방장 " + ((m.length ? nameOf(hostOf(r.id)) : "") || r.hostName || "")),
       h("span", { class: "rc-bottom" }, h("span", { class: "rc-people" }, m.slice(0, MAX_SLOTS).map(p => avatar(p.id, p.n, "sm"))),
         h("b", { class: "rc-count" }, m.length + "/" + MAX_SLOTS)));
   });
@@ -2148,7 +2148,7 @@ function stopRoom(){
   roomUnsubs.forEach(u => { try { u(); } catch {} });
   roomUnsubs = [];
   ROOM = null; db = null; state = null; players = []; history = [];
-  ready = false; lastStatus = null;
+  ready = false; lastStatus = null; lastHost = null;
 }
 function enterRoom(id){
   if (ROOM === id && !$("#view-room").hidden) return;
@@ -2216,7 +2216,10 @@ function renderRoomChrome(){
   rb.replaceChildren(...(running ? [h("b", {}, "게임 중")]
     : isHost() ? [h("b", {}, "게임 시작"), h("small", {}, others.length ? "준비 " + nReady + "/" + others.length : "혼자서도 시작할 수 있어요")]
     : [h("b", {}, ready ? "준비 완료" : "준비"), h("small", {}, ready ? "다시 누르면 취소" : "방장이 시작하면 바로 출발")]));
-  renderSetup();
+  renderSetup(); renderResetBtn();
+  // 방장이 바뀌면 '라운드 끝내기' 버튼도 다시 그려요
+  const hostNow = hostOf(ROOM);
+  if (hostNow !== lastHost) { lastHost = hostNow; if (running) renderStage(); }
   $("#tab-setup").textContent = isHost() ? "출제" : "출제 (방장)";
 }
 $("#ready-btn").addEventListener("click", () => {
