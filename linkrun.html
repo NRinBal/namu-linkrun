@@ -1953,11 +1953,11 @@ function membersOf(id){
   return m.sort((a, b) => (a.j || 0) - (b.j || 0));
 }
 const metaOf = id => lobbyRooms.find(r => r.id === id) || null;
-/* 방장: 방을 만든 사람이 있으면 그 사람, 나갔으면 가장 먼저 들어온 사람 */
+/* 방장: 지금 방에 있는 사람 중 가장 먼저 들어온 사람 (방을 만든 사람이 처음 방장).
+   방장이 나가면 다음 사람이 이어받고, 나갔던 사람이 돌아와도 되찾지 않아요. */
 function hostOf(id){
   if (!id) return me.id;
   const m = membersOf(id), meta = metaOf(id);
-  if (meta && m.some(p => p.id === meta.hostId)) return meta.hostId;
   return m.length ? m[0].id : (meta ? meta.hostId : me.id);
 }
 const isHost = () => !ROOM || hostOf(ROOM) === me.id;
@@ -2140,7 +2140,10 @@ function stopRoom(){
 function enterRoom(id){
   if (ROOM === id && !$("#view-room").hidden) return;
   stopRoom();
-  ROOM = id; joinedAt = now();
+  ROOM = id;
+  let kept = null; try { kept = JSON.parse(sessionStorage.getItem("linkrun.joined") || "null"); } catch {}
+  joinedAt = kept && kept.room === id ? kept.j : now();   // 새로고침은 나간 걸로 치지 않아요
+  try { sessionStorage.setItem("linkrun.joined", JSON.stringify({ room: id, j: joinedAt })); } catch {}
   historyKey = ""; myKey = ""; openRounds.clear();
   armedEnd = armedReset = armedGiveUp = false;
   db = roomDb(base, id);
@@ -2164,7 +2167,7 @@ function subscribe(){
     db.collection("players").onSnapshot(q => { players = q.docs.map(d => ({ id: d.id, ...d.data(), path: (d.data().path || []) })); render(); }, err),
     db.collection("history").onSnapshot(q => { history = q.docs.map(d => d.data()).sort((a, b) => b.round - a.round); render(); }, err));
 }
-$("#leave-btn").addEventListener("click", () => go(""));
+$("#leave-btn").addEventListener("click", () => { try { sessionStorage.removeItem("linkrun.joined"); } catch {} go(""); });
 $("#room-copy").addEventListener("click", () => {
   const url = location.href.split("#")[0] + "#" + ROOM;
   copyText(url, () => toast(url), "초대 링크를 복사했어요. 친구에게 보내세요.");
