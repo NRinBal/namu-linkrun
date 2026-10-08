@@ -106,6 +106,7 @@ a#start-doc[href]:active{transform:translate(5px,5px);box-shadow:0 0 0 var(--sha
 
 .clock{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;border-top:2px solid var(--hair);padding-top:16px}
 .timer{font-weight:900;font-size:clamp(56px,11vw,112px);line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:-.05em}
+.timer.hurry{color:var(--bad)}
 .timer.counting{color:var(--link);animation:tick 1s steps(1) infinite;transform-origin:left bottom}
 @keyframes tick{0%{transform:scale(1)}50%{transform:scale(1.06)}}
 .clock-sub{color:var(--muted);font-size:15px;font-weight:700}
@@ -691,7 +692,7 @@ button.big{padding:12px 20px;font-size:16px}
 // ==UserScript==
 // @name         나무위키링크스피드런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.4.0
+// @version      1.5.0
 // @description  나무위키링크스피드런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
@@ -760,7 +761,7 @@ button.big{padding:12px 20px;font-size:16px}
   const save = run => GM_setValue(RUN, run);
 
   function makeCode(run) {
-    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, x: !!run.x, path: run.path }));
+    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, x: !!run.x, to: !!run.to, path: run.path }));
     return 'LR1.' + body + '.' + fnv(body);
   }
 
@@ -772,7 +773,7 @@ button.big{padding:12px 20px;font-size:16px}
       const cur = load();
       const same = cur && cur.r === d.r && cur.p === d.p && cur.a === d.a;
       // b: 금지 문서 제목들, bp: 금지 규칙 이름들(예: date), bm: 'warn'(경고만) | 'dq'(밟으면 실격)
-      if (!same) save({ r: d.r, rn: d.rn || d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false,
+      if (!same) save({ r: d.r, rn: d.rn || d.r, p: d.p, s: d.s, t: d.t, a: d.a, lm: Number(d.lm) || 0, path: [], f: null, g: false,
         b: Array.isArray(d.b) ? d.b : [], bp: Array.isArray(d.bp) ? d.bp : [], bm: d.bm === 'dq' ? 'dq' : 'warn' });
     } catch (e) { console.warn('[나무위키링크스피드런] 시작 정보를 읽지 못했어요', e); }
     history.replaceState(history.state, '', location.pathname + location.search);
@@ -822,13 +823,13 @@ button.big{padding:12px 20px;font-size:16px}
   const isGoal = (run, t, from) => norm(t) === norm(run.t) || (run.tr && norm(t) === norm(run.tr)) || (!!from && norm(from) === norm(run.t));
   function resolveTarget() {
     const run = load();
-    if (!run || run.tr !== undefined || run.f != null || run.g || run.x) return;
+    if (!run || run.tr !== undefined || run.f != null || run.g || run.x || run.to) return;
     resolveTitle(run.t).then(real => {
       const cur = load();
       if (!cur || cur.r !== run.r || cur.a !== run.a) return;
       cur.tr = real && norm(real) !== norm(cur.t) ? real : null;
       // 확인이 끝나기 전에 이미 실제 문서에 도착해 있었다면 그때 완주로 쳐요.
-      const hit = cur.f == null && !cur.g && !cur.x && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
+      const hit = cur.f == null && !cur.g && !cur.x && !cur.to && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr) && (!cur.lm || x[1] <= cur.lm)) : null;
       if (hit) { cur.path = cur.path.slice(0, cur.path.indexOf(hit) + 1); cur.f = hit[1]; }
       save(cur); render(true);
       if (hit) copyCode('완주! 결과 코드를 복사했어요. 게임 페이지에 붙여넣으세요.');
@@ -870,7 +871,8 @@ button.big{padding:12px 20px;font-size:16px}
     lastUrl = location.href;
     const isFirst = first; first = false;
     const run = load();
-    if (!run || run.f != null || run.g || run.x) { render(true); return; }
+    if (!run || run.f != null || run.g || run.x || run.to) { render(true); return; }
+    if (checkLimit(run)) return;
     const t = titleOf(location.href);
     if (!t) { render(true); return; }
     const from0 = new URL(location.href).searchParams.get('from');
@@ -906,6 +908,15 @@ button.big{padding:12px 20px;font-size:16px}
     if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 게임 페이지에 붙여넣으세요.');
   }
   setInterval(check, 250);
+
+  /* 제한 시간: 지나면 '시간 초과'로 멈추고 결과 코드를 줘요 (한 번만) */
+  function checkLimit(run) {
+    if (!run || !run.lm || run.f != null || run.g || run.x || run.to) return false;
+    if (Date.now() - run.a <= run.lm) return false;
+    run.to = true; save(run); render(true);
+    copyCode('제한 시간이 끝났어요. 결과 코드를 복사했어요. 1분 안에 게임 페이지에 붙여넣으세요.');
+    return true;
+  }
 
   /* ---------- 3-1. 금지 문서로 가는 링크에 취소선 ---------- */
   const banStyle = document.createElement('style');
@@ -950,6 +961,10 @@ button.big{padding:12px 20px;font-size:16px}
   .brand em{color:var(--link);font-style:normal}
   .rnd{color:var(--muted);font-weight:800;margin-left:2px}
   .timer{font-weight:900;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em;margin:10px 0 6px}
+  .timer-row{display:flex;align-items:baseline;gap:8px;margin:10px 0 6px}
+  .timer-row .timer{margin:0}
+  .left{font-weight:900;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .left.hurry{color:var(--bad)}
   .goal{color:var(--muted);font-weight:700}
   .goal b{color:#0B1A13;background:var(--mark);padding:0 5px;border-radius:4px;font-weight:900}
   .stat{color:var(--muted);font-size:12px;font-weight:700;margin-top:4px}
@@ -972,7 +987,7 @@ button.big{padding:12px 20px;font-size:16px}
 <button class="mini" id="mini" hidden></button>
 <div class="box" id="box">
   <div class="row"><span class="brand"><em>나무</em>위키<em>링크</em>스피드런 <span id="round" class="rnd"></span></span><button id="fold" title="접기">접기</button></div>
-  <div class="timer" id="timer">00:00.0</div>
+  <div class="timer-row"><div class="timer" id="timer">00:00.0</div><span class="left" id="left" hidden></span></div>
   <div class="goal">목표 <b id="target"></b></div>
   <div class="stat" id="stat"></div>
   <ol id="path"></ol>
@@ -1020,8 +1035,12 @@ button.big{padding:12px 20px;font-size:16px}
     $('box').hidden = folded; $('mini').hidden = !folded;
 
     const now = Date.now();
-    const state = run.f != null ? 'done' : run.x ? 'dq' : run.g ? 'out' : 'run';
-    const timerText = state === 'done' ? fmt(run.f) : state === 'dq' ? '실격' : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
+    if (checkLimit(run)) return;
+    const state = run.f != null ? 'done' : run.x ? 'dq' : run.g ? 'out' : run.to ? 'time' : 'run';
+    const timerText = state === 'done' ? fmt(run.f) : state === 'dq' ? '실격' : state === 'out' ? '포기' : state === 'time' ? '시간 초과' : now < run.a ? '곧 시작' : fmt(now - run.a);
+    const left = run.lm ? run.a + run.lm - now : 0;
+    $('left').hidden = !(state === 'run' && run.lm && now >= run.a);
+    if (!$('left').hidden) { const t = Math.max(0, Math.ceil(left / 1000)); $('left').textContent = '남은 ' + Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); $('left').className = left <= 30000 ? 'left hurry' : 'left'; }
     $('timer').textContent = timerText;
     $('mini').textContent = '나무위키링크스피드런 ' + timerText;
     if (!full && run.path.length === lastLen && state === lastState) return;
@@ -1031,7 +1050,7 @@ button.big{padding:12px 20px;font-size:16px}
     $('target').textContent = run.t + (run.tr ? ' (= ' + run.tr + ')' : run.tr === undefined && state === 'run' ? ' · 넘겨주기 확인 중' : '');
     const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j' || x[2] === 'x').length;
     const nBan = ((run.b || []).length) + ((run.bp || []).includes('date') ? ' + 연도·날짜' : '');
-    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : state === 'dq' ? ' · 실격' : '')
+    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : state === 'dq' ? ' · 실격' : state === 'time' ? ' · 시간 초과' : '')
       + (banRules(run) ? ' · 금지 ' + nBan + (run.bm === 'dq' ? '(밟으면 실격)' : '') : '');
     $('stat').className = state === 'done' ? 'stat done' : 'stat';
 
@@ -1064,6 +1083,12 @@ button.big{padding:12px 20px;font-size:16px}
 const BANS = /*BANS*/{"country": {"name": "국가", "titles": ["대한민국", "한국", "미국", "일본", "중국", "북한", "영국", "프랑스", "독일", "러시아", "이탈리아", "스페인", "캐나다", "호주", "인도", "브라질", "멕시코", "튀르키예", "베트남", "태국", "대만", "몽골", "이집트", "이스라엘", "이란", "사우디아라비아", "네덜란드", "스위스", "스웨덴", "폴란드", "우크라이나", "그리스", "아르헨티나", "인도네시아", "필리핀", "싱가포르", "소련", "오스트리아", "포르투갈", "벨기에", "노르웨이"]}, "date": {"name": "연도·날짜", "titles": [], "patterns": ["date"], "note": "2024년, 1990년대, 19세기, 3월 1일, 3월 같은 문서 전부"}, "lang": {"name": "언어", "titles": ["영어", "한국어", "일본어", "중국어", "라틴어", "프랑스어", "독일어", "스페인어", "러시아어", "한자", "아랍어", "그리스어"]}, "city": {"name": "주요 도시", "titles": ["서울특별시", "부산광역시", "인천광역시", "대구광역시", "도쿄도", "오사카시", "뉴욕시", "로스앤젤레스", "워싱턴 D.C.", "파리(프랑스)", "런던", "베를린", "로마", "모스크바", "베이징시", "베이징", "상하이시", "상하이", "홍콩"]}, "hub": {"name": "대형 허브", "titles": ["지구", "사람", "인류", "세계", "아시아", "동아시아", "유럽", "아메리카", "아프리카", "유엔", "국제 연합", "인터넷", "나무위키", "위키백과", "영어 위키백과", "유튜브", "구글", "기독교", "불교", "이슬람"]}}/*BANS*/; // bans.json에서 build.py가 채워요
 const POOL = /*POOL*/{"음식·간식": ["붕어빵", "호떡", "순대", "곱창", "약과", "수정과", "식혜", "떡국", "부대찌개", "닭갈비", "족발", "보쌈", "짜파게티", "불닭볶음면", "초코파이", "새우깡", "허니버터칩", "빼빼로", "빙그레 바나나맛우유", "메로나", "붕어싸만코", "달고나", "뻥튀기", "솜사탕", "마시멜로", "크루아상", "츄러스", "타코", "쌀국수", "팟타이", "나초", "와플", "푸딩", "티라미수", "에그타르트", "호두과자", "계란빵", "인절미", "빙수", "양념치킨"], "동물": ["카피바라", "미어캣", "레서판다", "아홀로틀", "개복치", "도롱뇽", "해달", "수달", "오리너구리", "나무늘보", "아르마딜로", "고슴도치", "친칠라", "알파카", "비버", "두더지", "부엉이", "딱따구리", "홍학", "타조", "사다새", "앵무조개", "투구게", "집게(동물)", "불가사리", "해마", "가오리", "복어", "장수풍뎅이", "사슴벌레", "반딧불이", "사마귀", "소금쟁이", "무당벌레", "달팽이", "지렁이", "쿼카", "웜뱃", "시바견", "청설모"], "식물·자연": ["민들레", "선인장", "대나무", "은행나무", "벚나무", "단풍", "토끼풀", "파리지옥", "이끼", "송이버섯", "도토리", "무궁화", "연꽃", "튤립", "라벤더", "바오밥", "고사리", "쑥", "인삼", "산호", "진주", "오로라", "번개", "우박", "서리", "황사", "신기루", "소나기", "눈사람", "고드름", "빙하", "무지개", "돌멩이", "모래성", "파도", "안개", "개나리", "진달래", "수선화", "목련"], "물건": ["스테이플러", "포스트잇", "지우개", "이쑤시개", "빨대", "물티슈", "볼펜", "샤프펜슬", "형광펜", "클립", "선풍기", "전자레인지", "밥솥", "건전지", "손전등", "돋보기", "나침반", "모래시계", "오르골", "풍선", "종이비행기", "팽이", "요요", "고무줄", "옷걸이", "칫솔", "치약", "면봉", "텀블러", "우산", "자석", "압정", "연필깎이", "계산기", "보온병", "부채", "핫팩", "줄자", "바람개비", "손톱깎이"], "놀이·취미": ["윷놀이", "제기차기", "딱지", "공기놀이", "가위바위보", "술래잡기", "숨바꼭질", "끝말잇기", "오목", "장기", "마피아 게임", "젠가", "할리갈리", "부루마불", "뽑기기계", "노래방", "찜질방", "방탈출 카페", "줄넘기", "피구", "족구", "팔씨름", "훌라후프", "종이접기", "뜨개질", "캘리그래피", "직소 퍼즐", "캠핑", "낚시", "클라이밍", "필라테스", "스쿼트", "플랭크", "비눗방울", "썰매", "물수제비", "보드게임", "스도쿠", "다트", "사방치기"], "장소·명소": ["첨성대", "남이섬", "명동", "전주 한옥마을", "성산일출봉", "광안대교", "불국사", "수원 화성", "롯데월드", "청계천", "인사동", "감천문화마을", "63빌딩", "빅 벤", "피사의 사탑", "모아이", "스톤헨지", "앙코르 와트", "마추픽추", "우유니 사막", "나이아가라 폭포", "그랜드 캐니언", "금문교", "시드니 오페라 하우스", "개선문", "루브르", "몽마르트르", "정동진", "비무장지대", "독립문", "동대문", "오사카 성", "도톤보리강", "에펠탑", "자유의 여신상", "콜로세움", "타지마할", "만리장성", "남산서울타워", "경복궁"], "인물": ["허준", "김홍도", "신윤복", "황진이", "홍길동", "장보고", "을지문덕", "강감찬", "계백", "김유신", "선덕여왕", "문익점", "한석봉", "김정호", "방정환", "윤동주", "이중섭", "백남준", "우장춘", "앤디 워홀", "찰리 채플린", "오드리 헵번", "마릴린 먼로", "엘비스 프레슬리", "프레디 머큐리", "존 레논", "밥 로스", "해리 후디니", "에드거 앨런 포", "한스 크리스티안 안데르센", "쥘 베른", "아서 코난 도일", "애거서 크리스티", "라이트 형제", "장앙리 파브르", "알프레드 노벨", "그레고어 멘델", "이반 파블로프", "허난설헌", "정약전"], "과학·현상": ["뫼비우스의 띠", "피보나치 수열", "슈뢰딩거의 고양이", "도플러 효과", "핼리 혜성", "유성우", "일식", "초신성", "정전기", "마찰력", "무중력", "부력", "삼투", "광합성", "딸꾹질", "하품", "재채기", "멀미", "플라시보 효과", "황금비", "테셀레이션", "착시", "잔상", "백야", "윤년", "서머타임", "블루스크린", "무한 원숭이 정리", "몬티 홀 문제", "생일 문제", "머피의 법칙", "나비 효과", "도미노", "열대야", "방귀", "쥐불놀이", "코골이"], "캐릭터·게임": ["Stardew Valley", "모여봐요 동물의 숲", "Flappy Bird", "크레이지 아케이드", "테일즈런너", "지뢰 찾기", "스페이스 인베이더", "팩맨", "동키콩", "커비", "잠만보", "이브이", "골덕", "메타몽", "라이언(카카오프렌즈)", "펭수", "노하라 신노스케", "스누피", "헬로키티", "무민", "리락쿠마", "토토로", "가오나시", "올라프", "슈렉", "스티치", "푸", "톰과 제리", "보노보노", "케로로", "도라에몽", "피카츄", "뽀로로", "둘리", "루이지", "소닉 더 헤지혹", "꼬꼬마 텔레토비", "구데타마", "쿠로미", "마이멜로디"]}/*POOL*/; // pool.json에서 build.py가 채워요
 const COUNTDOWN_MS = 5000;
+const ROUND_LIMIT_MS = 5 * 60000;   // 한 판 제한 시간
+const GRACE_MS = 60000;             // 제한 시간이 끝난 뒤 결과 코드를 받는 시간
+const limitOf = g => (g && g.limitMs) || 0;                       // 예전 라운드(제한 없음)는 0
+const overLimit = g => !!limitOf(g) && now() >= g.startAt + limitOf(g);
+const timedOut = (p, g) => !!limitOf(g) && p.finishedMs == null && !p.gaveUp && overLimit(g);
+const fmtLeft = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); };
 
 const $ = s => document.querySelector(s);
 function lsGet(k){ try { return localStorage.getItem(k); } catch { return null; } }
@@ -1129,7 +1154,7 @@ const banOf = g => (g && g.rules && g.rules.ban) || null;
 const startLink = g => {
   const ban = banOf(g) || {};
   return namuUrl(g.start) + "#linkrun=" + b64e(JSON.stringify({ r: g.round, rn: dispRound(g.round), s: g.start, t: g.target, a: g.startAt, p: me.id,
-    b: ban.titles || [], bp: ban.patterns || [], bm: ban.mode === "dq" ? "dq" : "warn" }));
+    b: ban.titles || [], bp: ban.patterns || [], bm: ban.mode === "dq" ? "dq" : "warn", lm: limitOf(g) }));
 };
 const HOW = { b: "뒤로", o: "본문 밖", j: "링크 없이 이동", x: "금지 문서" };
 const isWarn = (how, rules) => how === "o" || how === "j" || how === "x" || (how === "b" && !(rules && rules.back));
@@ -1244,11 +1269,14 @@ function applyCode(code){
   if (p && (p.finishedMs != null || p.gaveUp)) { toast("이미 이번 라운드 기록이 확정됐어요."); return; }
   const path = (d.path || []).slice(0, 500).map(x => ({ t: String(x[0]).slice(0, 200), ms: Number(x[1]) || 0, how: ["l","o","b","j","x"].includes(x[2]) ? x[2] : "j" }));
   const last = path[path.length - 1];
-  const finishedMs = last && norm(last.t) === norm(g.target) ? last.ms : (d.f != null ? Number(d.f) : null);
+  let finishedMs = last && norm(last.t) === norm(g.target) ? last.ms : (d.f != null ? Number(d.f) : null);
+  let late = false;
+  if (finishedMs != null && limitOf(g) && finishedMs > limitOf(g)) { finishedMs = null; late = true; }
   const body = { name: me.name, round: g.round, path, finishedMs, gaveUp: !!d.g && finishedMs == null, auto: true, joinedAt: p ? p.joinedAt : now() };
   queue(() => myRef().set(body));
   const warn = path.filter(x => entryWarn(x, g.rules)).length;
   if (isDq(body, g.rules)) { toast("실격 기록을 올렸어요. 금지 문서에 들어갔어요."); return; }
+  if (late) { toast("제한 시간(" + fmtLeft(limitOf(g)) + ")을 넘겨 도착해서 시간 초과로 기록했어요."); return; }
   toast(finishedMs != null ? "완주 기록을 올렸어요. " + fmt(finishedMs) + " · " + path.length + "클릭" + (warn ? " · 경고 " + warn : "") : body.gaveUp ? "포기 기록을 올렸어요." : "지금까지의 경로를 올렸어요.");
 }
 function logDoc(raw){
@@ -1262,6 +1290,7 @@ function logDoc(raw){
   const last = p.path.length ? p.path[p.path.length-1].t : g.start;
   if (norm(t) === norm(last)) { toast("방금 기록한 문서와 같아요."); return; }
   const ms = now() - g.startAt;
+  if (limitOf(g) && ms > limitOf(g)) { toast("제한 시간 " + fmtLeft(limitOf(g)) + "이 끝나서 더 기록할 수 없어요."); return; }
   const done = norm(t) === norm(g.target);
   const banned = !done && bannedTitle(t, g.rules);
   const path = [...p.path, { t, ms, how: banned ? "x" : "m" }];
@@ -1292,16 +1321,16 @@ function startRound(start, target, blind){
   if (ban) rules.ban = ban;
   const next = {
     round: (G().round || 0) + 1, status: "running", start, target, blind: !!blind,
-    startAt: now() + COUNTDOWN_MS, host: me.name, rules,
+    startAt: now() + COUNTDOWN_MS, limitMs: ROUND_LIMIT_MS, host: me.name, rules,
     since: SINCE()   // 방 기록 초기화 시점을 이어받아요 (빠뜨리면 초기화가 풀려요)
   };
   queue(() => db.doc("game/state").set(next));
   updateMeta({ status: "running", round: dispRound(next.round), ban: ban ? banLabel(ban) + (ban.mode === "dq" ? " · 실격" : "") : "" });
   $("#setup-start").value = ""; $("#setup-target").value = "";
 }
-function endRound(){
+function endRound(force){
   if (!isHost()) { toast("방장만 라운드를 끝낼 수 있어요."); return; }
-  if (!armedEnd) { armedEnd = true; render(); setTimeout(()=>{ armedEnd = false; render(); }, 3000); return; }
+  if (!force && !armedEnd) { armedEnd = true; render(); setTimeout(()=>{ armedEnd = false; render(); }, 3000); return; }
   armedEnd = false;
   const g = G();
   const results = sortBoard(roundPlayers()).map(p => ({
@@ -1309,7 +1338,7 @@ function endRound(){
     warns: warnCount(p.path, g.rules), path: p.path.map(x => ({ t: x.t, how: x.how || "m" }))
   }));
   queue(async () => {
-    await db.doc("history/r" + g.round).set({ round: g.round, start: g.start, target: g.target, rules: g.rules || {}, startAt: g.startAt, endedAt: now(), results });
+    await db.doc("history/r" + g.round).set({ round: g.round, start: g.start, target: g.target, rules: g.rules || {}, limitMs: limitOf(g), startAt: g.startAt, endedAt: now(), results });
     await db.doc("game/state").update({ status: "ended", endedAt: now() });
   });
   updateMeta({ status: "ended" });
@@ -1327,6 +1356,7 @@ function saveName(){
 /* ---------- render ---------- */
 function statusOf(p, rules = G().rules){
   if (isDq(p, rules)) return { cls: "out", label: "실격" };
+  if (timedOut(p, G())) return { cls: "out", label: "시간 초과" };
   if (p.finishedMs != null) return { cls: "done", label: "완주" };
   if (p.gaveUp) return { cls: "out", label: "포기" };
   return { cls: "run", label: "달리는 중" };
@@ -1371,6 +1401,7 @@ function renderStage(){
   const pill = g.status === "running" ? (counting ? ["run","곧 시작"] : ["run","진행 중"]) : g.status === "ended" ? ["done","종료"] : ["","출제 대기"];
   meta.append(h("span", { class: "pill " + pill[0] }, pill[1]));
   if (started) {
+    if (limitOf(g)) meta.append(h("span", { class: "rule" }, "제한 " + fmtLeft(limitOf(g))));
     meta.append(h("span", { class: "rule" }, "검색·주소창 금지"));
     meta.append(h("span", { class: "rule" }, g.rules && g.rules.back ? "뒤로 가기 허용" : "뒤로 가기 금지"));
     meta.append(h("span", { class: "rule" }, g.rules && g.rules.foot ? "각주 링크 허용" : "각주 링크 금지"));
@@ -1403,7 +1434,7 @@ function renderStage(){
       if (p.finishedMs == null && !p.gaveUp && !dq) acts.append(h("a", { href: startLink(g), target: "_blank", rel: "noopener", class: "note" }, "시작 문서 다시 열기 ↗"));
     }
     acts.append(h("span", { class: "spacer" }));
-    if (isHost()) acts.append(h("button", { class: "danger" + (armedEnd ? " armed" : ""), onclick: endRound }, armedEnd ? "한 번 더 누르면 종료" : "라운드 끝내기"));
+    if (isHost()) acts.append(h("button", { class: "danger" + (armedEnd ? " armed" : ""), onclick: () => endRound() }, armedEnd ? "한 번 더 누르면 종료" : "라운드 끝내기"));
   } else if (g.status === "ended") {
     acts.append(h("span", { class: "note" }, "결과와 모든 경로가 공개됐어요. 아래에서 다음 라운드를 출제하세요."));
   }
@@ -1415,11 +1446,20 @@ function renderClock(){
   const counting = isCounting(), live = isLive(), started = g.round > SINCE();
   const timer = $("#timer"), sub = $("#clock-sub");
   timer.classList.toggle("counting", counting);
+  const lim = limitOf(g), left = lim ? g.startAt + lim - now() : Infinity;
+  timer.classList.toggle("hurry", live && lim > 0 && left > 0 && left <= 30000 && !(p && (p.finishedMs != null || p.gaveUp)));
   if (counting) { timer.textContent = String(Math.ceil((g.startAt - now())/1000)); sub.textContent = "초 뒤 시작 문서가 공개돼요"; }
   else if (!started) { timer.textContent = fmt(0); sub.textContent = "아래에서 문서를 정하고 라운드를 시작하세요"; }
   else if (p && isDq(p, g.rules)) { timer.textContent = "실격"; sub.textContent = "금지 문서에 들어갔어요 · " + p.path.length + "클릭"; }
   else if (p && p.finishedMs != null) { timer.textContent = fmt(p.finishedMs); sub.textContent = "완주 · " + p.path.length + "클릭"; }
-  else if (live) { timer.textContent = fmt(now() - g.startAt); sub.textContent = p ? (p.gaveUp ? "포기했어요" : p.path.length + "클릭째") : "라운드 경과 시간"; }
+  else if (live && lim && left <= 0) {
+    timer.textContent = "시간 종료";
+    sub.textContent = "결과 코드는 " + fmtLeft(left + GRACE_MS) + " 안에 붙여넣어 주세요" + (p && !p.gaveUp ? " · " + p.path.length + "클릭" : "");
+  }
+  else if (live) {
+    timer.textContent = fmt(now() - g.startAt);
+    sub.textContent = (lim ? "남은 시간 " + fmtLeft(left) + " · " : "") + (p ? (p.gaveUp ? "포기했어요" : p.path.length + "클릭째") : "라운드 경과 시간");
+  }
   else { timer.textContent = fmt((g.endedAt || now()) - g.startAt); sub.textContent = "라운드 종료"; }
 }
 
@@ -1482,6 +1522,7 @@ const openRounds = new Set();
 let historyKey = "";
 const resultState = x => x.dq ? "dq" : x.finishedMs != null ? "done" : x.gaveUp ? "out" : "dnf";
 const RESULT_LABEL = { dq: "실격", out: "포기", dnf: "미완주" };
+const resultLabel = (st, r) => st === "dnf" && r && r.limitMs ? "시간 초과" : RESULT_LABEL[st];
 const playerKey = x => x.id || "n:" + (x.name || "");
 
 function renderHistory(){
@@ -1502,11 +1543,11 @@ function renderHistory(){
       return h("span", { class: "rchip " + st + (st === "done" && rank === 1 ? " win" : "") },
         st === "done" ? h("b", { class: "rk" }, rank) : null,
         h("span", { class: "nm" }, x.name || "이름 없음"),
-        h("span", { class: "tm" }, st === "done" ? fmt(x.finishedMs) + " · " + x.clicks + "클릭" : RESULT_LABEL[st]));
+        h("span", { class: "tm" }, st === "done" ? fmt(x.finishedMs) + " · " + x.clicks + "클릭" : resultLabel(st, r)));
     });
     const table = h("table", {}, h("tbody", {}, res.map(x => h("tr", {},
       h("td", { class: "who-cell" }, x.name || "이름 없음"),
-      h("td", { class: "num" }, x.dq ? "실격" : x.finishedMs != null ? fmt(x.finishedMs) : x.gaveUp ? "포기" : "미완주"),
+      h("td", { class: "num" }, x.dq ? "실격" : x.finishedMs != null ? fmt(x.finishedMs) : x.gaveUp ? "포기" : resultLabel("dnf", r)),
       h("td", { class: "num" }, x.clicks + "클릭" + (x.warns ? " · 경고 " + x.warns : "")),
       h("td", {}, h("ol", { class: "path" }, pathList(x.path || [], { start: r.start, goalIdx: x.finishedMs != null ? (x.path||[]).length-1 : -1, rules: r.rules })))))));
     const d = h("details", { class: "hist", open: openRounds.has(r.round) },
@@ -1744,7 +1785,7 @@ function renderMyStats(force){
     const hit = svgEl("rect", { x: cx(i) - slot / 2, y: hitY, width: slot, height: hitH, class: "hit", tabindex: "0" });
     const show = () => {
       tip.replaceChildren(h("b", {}, (myScope === "all" ? o.r.round : dispRound(o.r.round)) + "R · " + pair(o)),
-        h("span", { class: "tv" }, o.st === "done" ? fmt(o.x.finishedMs) + " · " + o.x.clicks + "클릭" : RESULT_LABEL[o.st]),
+        h("span", { class: "tv" }, o.st === "done" ? fmt(o.x.finishedMs) + " · " + o.x.clicks + "클릭" : resultLabel(o.st, o.r)),
         h("span", {}, o.st === "done" ? o.of + "명 중 " + o.rank + "등" : o.of + "명 참가"));
       tip.style.setProperty("--dot", "var(--link)"); tip.hidden = false;
       const box = svg.getBoundingClientRect(), sx = box.width / W;
@@ -1766,7 +1807,7 @@ function renderMyStats(force){
   const tbody = h("tbody", {}, rows.slice().reverse().map(o => h("tr", {},
     h("td", { class: "num rk-cell" }, (myScope === "all" ? o.r.round : dispRound(o.r.round)) + "R"),
     h("td", { class: "who-cell" }, pair(o)),
-    h("td", { class: "num" }, o.st === "done" ? o.rank + "/" + o.of + "등" : h("span", { class: o.st === "dq" ? "bad-text" : "muted-text" }, RESULT_LABEL[o.st])),
+    h("td", { class: "num" }, o.st === "done" ? o.rank + "/" + o.of + "등" : h("span", { class: o.st === "dq" ? "bad-text" : "muted-text" }, resultLabel(o.st, o.r))),
     h("td", { class: "num" }, o.st === "done" ? fmt(o.x.finishedMs) : "—"),
     h("td", { class: "num" }, o.x.clicks + "클릭" + (o.x.warns ? " · 경고 " + o.x.warns : "")),
     h("td", { class: "path-cell" }, h("ol", { class: "path" }, pathList(o.x.path || [], { start: o.r.start, goalIdx: o.st === "done" ? (o.x.path || []).length - 1 : -1, rules: o.r.rules }))))));
@@ -1907,12 +1948,18 @@ $("#shuffle-btn").addEventListener("click", () => { const [a,b] = pick2(); $("#s
 $("#start-btn").addEventListener("click", () => startRound($("#setup-start").value, $("#setup-target").value, false));
 $("#blind-btn").addEventListener("click", () => { const [a,b] = pick2(); startRound(a, b, true); });
 
+let autoEnded = 0, lastOver = false;
 setInterval(() => {
   const g = G();
   if (g.status !== "running") return;
-  const c = isCounting();
-  if (c !== lastCounting) { lastCounting = c; render(); }
+  const c = isCounting(), over = overLimit(g);
+  if (c !== lastCounting || over !== lastOver) { lastCounting = c; lastOver = over; render(); }
   else renderClock();
+  if (limitOf(g) && now() >= g.startAt + limitOf(g) + GRACE_MS && isHost() && autoEnded !== g.round) {
+    autoEnded = g.round;
+    endRound(true);
+    toast("제한 시간이 끝나서 라운드를 마쳤어요.");
+  }
 }, 100);
 
 /* ═════════ 저장소 · 화면 전환 · 로비 · 접속 · 채팅 ═════════

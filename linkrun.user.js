@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         나무위키링크스피드런 기록기
 // @namespace    https://claude.ai/linkrun
-// @version      1.4.0
+// @version      1.5.0
 // @description  나무위키링크스피드런 라운드 동안 나무위키에서 이동한 문서를 자동으로 기록하고, 끝나면 결과 코드를 만들어요.
 // @match        https://namu.wiki/*
 // @grant        GM_getValue
@@ -70,7 +70,7 @@
   const save = run => GM_setValue(RUN, run);
 
   function makeCode(run) {
-    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, x: !!run.x, path: run.path }));
+    const body = b64e(JSON.stringify({ v: 1, r: run.r, p: run.p, s: run.s, t: run.t, a: run.a, f: run.f, g: run.g, x: !!run.x, to: !!run.to, path: run.path }));
     return 'LR1.' + body + '.' + fnv(body);
   }
 
@@ -82,7 +82,7 @@
       const cur = load();
       const same = cur && cur.r === d.r && cur.p === d.p && cur.a === d.a;
       // b: 금지 문서 제목들, bp: 금지 규칙 이름들(예: date), bm: 'warn'(경고만) | 'dq'(밟으면 실격)
-      if (!same) save({ r: d.r, rn: d.rn || d.r, p: d.p, s: d.s, t: d.t, a: d.a, path: [], f: null, g: false,
+      if (!same) save({ r: d.r, rn: d.rn || d.r, p: d.p, s: d.s, t: d.t, a: d.a, lm: Number(d.lm) || 0, path: [], f: null, g: false,
         b: Array.isArray(d.b) ? d.b : [], bp: Array.isArray(d.bp) ? d.bp : [], bm: d.bm === 'dq' ? 'dq' : 'warn' });
     } catch (e) { console.warn('[나무위키링크스피드런] 시작 정보를 읽지 못했어요', e); }
     history.replaceState(history.state, '', location.pathname + location.search);
@@ -132,13 +132,13 @@
   const isGoal = (run, t, from) => norm(t) === norm(run.t) || (run.tr && norm(t) === norm(run.tr)) || (!!from && norm(from) === norm(run.t));
   function resolveTarget() {
     const run = load();
-    if (!run || run.tr !== undefined || run.f != null || run.g || run.x) return;
+    if (!run || run.tr !== undefined || run.f != null || run.g || run.x || run.to) return;
     resolveTitle(run.t).then(real => {
       const cur = load();
       if (!cur || cur.r !== run.r || cur.a !== run.a) return;
       cur.tr = real && norm(real) !== norm(cur.t) ? real : null;
       // 확인이 끝나기 전에 이미 실제 문서에 도착해 있었다면 그때 완주로 쳐요.
-      const hit = cur.f == null && !cur.g && !cur.x && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr)) : null;
+      const hit = cur.f == null && !cur.g && !cur.x && !cur.to && cur.tr ? cur.path.find(x => norm(x[0]) === norm(cur.tr) && (!cur.lm || x[1] <= cur.lm)) : null;
       if (hit) { cur.path = cur.path.slice(0, cur.path.indexOf(hit) + 1); cur.f = hit[1]; }
       save(cur); render(true);
       if (hit) copyCode('완주! 결과 코드를 복사했어요. 게임 페이지에 붙여넣으세요.');
@@ -180,7 +180,8 @@
     lastUrl = location.href;
     const isFirst = first; first = false;
     const run = load();
-    if (!run || run.f != null || run.g || run.x) { render(true); return; }
+    if (!run || run.f != null || run.g || run.x || run.to) { render(true); return; }
+    if (checkLimit(run)) return;
     const t = titleOf(location.href);
     if (!t) { render(true); return; }
     const from0 = new URL(location.href).searchParams.get('from');
@@ -216,6 +217,15 @@
     if (run.f != null) copyCode('완주! 결과 코드를 복사했어요. 게임 페이지에 붙여넣으세요.');
   }
   setInterval(check, 250);
+
+  /* 제한 시간: 지나면 '시간 초과'로 멈추고 결과 코드를 줘요 (한 번만) */
+  function checkLimit(run) {
+    if (!run || !run.lm || run.f != null || run.g || run.x || run.to) return false;
+    if (Date.now() - run.a <= run.lm) return false;
+    run.to = true; save(run); render(true);
+    copyCode('제한 시간이 끝났어요. 결과 코드를 복사했어요. 1분 안에 게임 페이지에 붙여넣으세요.');
+    return true;
+  }
 
   /* ---------- 3-1. 금지 문서로 가는 링크에 취소선 ---------- */
   const banStyle = document.createElement('style');
@@ -260,6 +270,10 @@
   .brand em{color:var(--link);font-style:normal}
   .rnd{color:var(--muted);font-weight:800;margin-left:2px}
   .timer{font-weight:900;font-size:34px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em;margin:10px 0 6px}
+  .timer-row{display:flex;align-items:baseline;gap:8px;margin:10px 0 6px}
+  .timer-row .timer{margin:0}
+  .left{font-weight:900;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .left.hurry{color:var(--bad)}
   .goal{color:var(--muted);font-weight:700}
   .goal b{color:#0B1A13;background:var(--mark);padding:0 5px;border-radius:4px;font-weight:900}
   .stat{color:var(--muted);font-size:12px;font-weight:700;margin-top:4px}
@@ -282,7 +296,7 @@
 <button class="mini" id="mini" hidden></button>
 <div class="box" id="box">
   <div class="row"><span class="brand"><em>나무</em>위키<em>링크</em>스피드런 <span id="round" class="rnd"></span></span><button id="fold" title="접기">접기</button></div>
-  <div class="timer" id="timer">00:00.0</div>
+  <div class="timer-row"><div class="timer" id="timer">00:00.0</div><span class="left" id="left" hidden></span></div>
   <div class="goal">목표 <b id="target"></b></div>
   <div class="stat" id="stat"></div>
   <ol id="path"></ol>
@@ -330,8 +344,12 @@
     $('box').hidden = folded; $('mini').hidden = !folded;
 
     const now = Date.now();
-    const state = run.f != null ? 'done' : run.x ? 'dq' : run.g ? 'out' : 'run';
-    const timerText = state === 'done' ? fmt(run.f) : state === 'dq' ? '실격' : state === 'out' ? '포기' : now < run.a ? '곧 시작' : fmt(now - run.a);
+    if (checkLimit(run)) return;
+    const state = run.f != null ? 'done' : run.x ? 'dq' : run.g ? 'out' : run.to ? 'time' : 'run';
+    const timerText = state === 'done' ? fmt(run.f) : state === 'dq' ? '실격' : state === 'out' ? '포기' : state === 'time' ? '시간 초과' : now < run.a ? '곧 시작' : fmt(now - run.a);
+    const left = run.lm ? run.a + run.lm - now : 0;
+    $('left').hidden = !(state === 'run' && run.lm && now >= run.a);
+    if (!$('left').hidden) { const t = Math.max(0, Math.ceil(left / 1000)); $('left').textContent = '남은 ' + Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); $('left').className = left <= 30000 ? 'left hurry' : 'left'; }
     $('timer').textContent = timerText;
     $('mini').textContent = '나무위키링크스피드런 ' + timerText;
     if (!full && run.path.length === lastLen && state === lastState) return;
@@ -341,7 +359,7 @@
     $('target').textContent = run.t + (run.tr ? ' (= ' + run.tr + ')' : run.tr === undefined && state === 'run' ? ' · 넘겨주기 확인 중' : '');
     const warn = run.path.filter(x => x[2] === 'o' || x[2] === 'j' || x[2] === 'x').length;
     const nBan = ((run.b || []).length) + ((run.bp || []).includes('date') ? ' + 연도·날짜' : '');
-    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : state === 'dq' ? ' · 실격' : '')
+    $('stat').textContent = run.path.length + '클릭' + (warn ? ' · 경고 ' + warn : '') + (state === 'done' ? ' · 완주' : state === 'dq' ? ' · 실격' : state === 'time' ? ' · 시간 초과' : '')
       + (banRules(run) ? ' · 금지 ' + nBan + (run.bm === 'dq' ? '(밟으면 실격)' : '') : '');
     $('stat').className = state === 'done' ? 'stat done' : 'stat';
 
